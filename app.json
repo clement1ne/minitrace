@@ -34,11 +34,19 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ce766a9-cd34-45a9-b29b-a085dcda1b75"
+      }
+    },
+    "owner": "goyza"
   }
 }
