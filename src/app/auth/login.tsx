@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
-import { login } from '../../lib/supabase/auth.ts';
+import { login } from '../../lib/supabase/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function LoginScreen() {
         console.log("moving to dashboard")
         router.replace('/tabs/dashboard')
       }
-    } catch(err: any) {
+    } catch (err: any) {
       console.error(err.message);
     }
   };
@@ -176,8 +176,8 @@ const styles = StyleSheet.create({
     color: Colors.black,
     backgroundColor: Colors.gray50,
   },
-  inputError: { borderColor: Colors.danger },
-  errorText: { fontSize: Typography.xs, color: Colors.danger, marginTop: 4 },
+  //inputError: { borderColor: Colors.danger },
+  //errorText: { fontSize: Typography.xs, color: Colors.danger, marginTop: 4 },
   forgotWrap: {
     alignSelf: 'flex-end',
     marginTop: Spacing.sm,
