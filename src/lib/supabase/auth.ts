@@ -1,15 +1,15 @@
 import { supabase } from '../../utils/supabase'
 
-export async function login(email: string, password) {
+export async function login(email: string, password: string) {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email, 
+      email,
       password,
     })
 
     if (error) {
       console.error("Login error: ", error.message);
-      return {success: false, error: error.message}
+      return { success: false, error: error.message }
     }
     console.log('login success')
     return {
@@ -18,9 +18,9 @@ export async function login(email: string, password) {
       user: data.user,
       session: data.session
     }
-  } catch(err) {
+  } catch (err) {
     console.log(err)
-    return {success: false, error: err.message}
+    return { success: false, error: err.message }
   }
-} 
+}
 

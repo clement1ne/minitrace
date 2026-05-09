@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,26 +9,59 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
+import { getPassports } from '@/lib/supabase/functions';
+import { getCurrentUser } from '@/lib/supabase/functions';
 
 type Filter = 'All' | 'Verified' | 'Drafts';
 
-const PASSPORTS = [
+/*const PASSPORTS = [
   { id: '0042', name: 'Ceramic Mug', meta: '2 days ago · 14 scans', status: 'Verified', color: '#9FE1CB' },
   { id: '0041', name: 'Linen Tote Bag', meta: '5 days ago · 8 scans', status: 'Verified', color: '#B5D4F4' },
   { id: '0040', name: 'Beeswax Candle', meta: '1 week ago · 3 scans', status: 'Verified', color: '#FAC775' },
   { id: '0039', name: 'Woven Basket', meta: 'Draft · not published', status: 'Draft', color: Colors.gray200 },
-];
+];*/
+
+
+
 
 export default function MyPassportsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Filter>('All');
   const filters: Filter[] = ['All', 'Verified', 'Drafts'];
-
-  const filtered = PASSPORTS.filter((p) => {
+  const [passports, setPassports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const filtered = passports.filter((p) => {
     if (activeFilter === 'All') return true;
     if (activeFilter === 'Verified') return p.status === 'Verified';
-    return p.status === 'Draft';
+    if (activeFilter === 'Drafts') return p.status === 'Draft';
+    return true;
   });
+
+  useEffect(() => {
+    async function load() {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) return;
+
+      const data = await getPassports(currentUser.id);
+
+      // Map DB columns → your display format
+      const mapped = data?.map((p) => ({
+        id: String(p.id).padStart(4, '0'),         // e.g. 42 → '0042'
+        name: p.product_name,
+        meta: p.status === 'Draft'
+          ? 'Draft · not published'
+          : `${p.created_at} · _____ scans`, // adjust to your columns
+        status: p.status,                           // 'Verified' | 'Draft'
+        color: p.status === 'Draft' ? Colors.gray200
+          : p.status === 'Verified' ? '#9FE1CB'
+            : '#B5D4F4',
+      })) ?? [];
+
+      setPassports(mapped);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe}>
