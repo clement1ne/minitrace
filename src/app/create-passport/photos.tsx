@@ -6,10 +6,13 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
+import * as ImagePicker from 'expo-image-picker';
+import * as Camera from 'expo-camera';
 
 const MAX_PHOTOS = 3;
 
@@ -19,10 +22,47 @@ export default function PhotosScreen() {
 
   const handleAddPhoto = () => {
     Alert.alert('Add Photo', 'Choose a source', [
-      { text: 'Camera', onPress: () => addSimulated() },
-      { text: 'Gallery', onPress: () => addSimulated() },
+      { text: 'Camera', onPress: () => pickImage('camera') },
+      { text: 'Gallery', onPress: () => pickImage('gallery') },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  const pickImage = async (source: string) => {
+    if (photos.length >= MAX_PHOTOS) return;
+
+    // Request permissions
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Camera access is needed to take photos.');
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Gallery access is needed to pick photos.');
+        return;
+      }
+    }
+
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      })
+      : await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: MAX_PHOTOS - photos.length,
+        quality: 0.8,
+      });
+
+    if (!result.canceled) {
+      const uris = result.assets.map((a) => a.uri);
+      setPhotos((prev) => [...prev, ...uris].slice(0, MAX_PHOTOS));
+    }
   };
 
   const addSimulated = () => {
@@ -64,9 +104,9 @@ export default function PhotosScreen() {
         </Text>
 
         <View style={styles.thumbRow}>
-          {photos.map((_, i) => (
+          {photos.map((photo, i) => (
             <View key={i} style={styles.thumbWrap}>
-              <View style={[styles.thumb, { backgroundColor: thumbColors[i] }]} />
+              <Image source={{ uri: photo }} style={styles.thumb} />
               <TouchableOpacity style={styles.removeBtn} onPress={() => removePhoto(i)}>
                 <Text style={styles.removeBtnText}>✕</Text>
               </TouchableOpacity>

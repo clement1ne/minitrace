@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
+import { getPassports } from '@/lib/supabase/functions';
 
 const STATS = [
   { num: '12', label: 'Passports' },
