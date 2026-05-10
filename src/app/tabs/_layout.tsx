@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Typography } from '../constants/theme';
 
 function TabIcon({
@@ -31,6 +31,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
+          title: 'Home',
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji="🏠" label="Home" focused={focused} />
           ),
@@ -39,6 +40,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="my-passports"
         options={{
+          title: 'Passports',
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji="📋" label="Passports" focused={focused} />
           ),
@@ -47,6 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          title: 'Profile',
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji="👤" label="Profile" focused={focused} />
           ),
@@ -68,6 +71,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     gap: 2,
+    minWidth: 70,
   },
   emoji: { fontSize: 20 },
   label: {

@@ -1,16 +1,15 @@
+import { getCurrentUser, getPassports } from '@/lib/supabase/functions';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../constants/theme';
-import { getPassports } from '@/lib/supabase/functions';
-import { getCurrentUser } from '@/lib/supabase/functions';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 type Filter = 'All' | 'Verified' | 'Drafts';
 
@@ -160,6 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     gap: Spacing.sm,
     flexDirection: 'row',
+    alignItems: 'center',
   },
   chip: {
     paddingHorizontal: Spacing.lg,
@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: Colors.border,
+    alignSelf: 'flex-start',
   },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: Typography.sm, color: Colors.gray600 },
