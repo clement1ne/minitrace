@@ -11,29 +11,28 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
-
-const PASSPORT = {
-  id: '0043',
-  name: 'Handmade Ceramic Mug',
-  maker: 'Maria Santos',
-  material: 'Stoneware, natural ash glaze',
-  origin: 'Davao, Philippines',
-  method: 'Wheel-thrown',
-  firedAt: '1280°C',
-  score: 7.8,
-  description:
-    'Wheel-thrown stoneware mug with natural ash glaze, kiln-fired at 1280°C. Each piece is unique with slight variations in glaze pooling.',
-};
-
-const DETAILS = [
-  { key: 'Material', value: PASSPORT.material },
-  { key: 'Made in', value: PASSPORT.origin },
-  { key: 'Method', value: PASSPORT.method },
-  { key: 'Fired at', value: PASSPORT.firedAt },
-  { key: 'Passport ID', value: `#MT-${PASSPORT.id}` },
-];
+import { usePassportStore } from '../../store/usePassportStore';
 
 export default function PreviewScreen() {
+  const response = usePassportStore((s) => s.response);
+  console.log("preview response: ", response);
+  
+  const PASSPORT = {
+    id: response?.id ?? '-',
+    name: response?.name ?? '-',
+    maker: 'Maria Santos',
+    material: response?.material ?? '-',
+    origin: response?.origin ?? '-',
+    method: response?.method ?? '-',
+    score: response?.sustainability_score ?? '-',
+    description: response?.description ?? '-',
+  };
+  const DETAILS = [
+    { key: 'Material', value: PASSPORT.material },
+    { key: 'Made in', value: PASSPORT.origin },
+    { key: 'Method', value: PASSPORT.method },
+    { key: 'Passport ID', value: `#MT-${PASSPORT.id}` },
+  ];
   const router = useRouter();
 
   const handlePublish = () => {

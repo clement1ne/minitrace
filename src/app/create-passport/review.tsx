@@ -11,18 +11,18 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
+import { usePassportStore } from '../../store/usePassportStore';
 
 const SCORE = 7.8;
 
 export default function ReviewScreen() {
+  const response = usePassportStore((s) => s.response);
   const router = useRouter();
-  const [productName, setProductName] = useState('Handmade Ceramic Mug');
-  const [materials, setMaterials] = useState('Stoneware clay, natural ash glaze');
-  const [description, setDescription] = useState(
-    'Wheel-thrown stoneware mug with natural ash glaze, kiln-fired at 1280°C. Each piece is unique with slight variations in glaze pooling.'
-  );
-  const [origin, setOrigin] = useState('Davao, Philippines');
-  const [method, setMethod] = useState('Wheel-thrown');
+  const [productName, setProductName] = useState(response?.name ?? '-');
+  const [materials, setMaterials] = useState(response?.material ?? '-');
+  const [description, setDescription] = useState(response?.description ?? '-');
+  const [origin, setOrigin] = useState(response?.origin ?? '-');
+  const [method, setMethod] = useState(response?.method ?? '-');
 
   return (
     <SafeAreaView style={styles.safe}>

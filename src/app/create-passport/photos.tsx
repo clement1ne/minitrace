@@ -13,12 +13,20 @@ import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
 import * as ImagePicker from 'expo-image-picker';
 import * as Camera from 'expo-camera';
+import {askAI} from '../../lib/ai/huggingface'
+import * as FileSystem from 'expo-file-system/legacy';
+import {usePassportStore} from '../../store/usePassportStore';
 
 const MAX_PHOTOS = 3;
+let uris;
+let base64s;
+let encoded;
 
 export default function PhotosScreen() {
   const router = useRouter();
   const [photos, setPhotos] = useState<string[]>([]);
+  const [base64s, setBase64s] = useState<string[]>([]);
+  const setUris = usePassportStore((s) => s.setUris);
 
   const handleAddPhoto = () => {
     Alert.alert('Add Photo', 'Choose a source', [
@@ -31,7 +39,6 @@ export default function PhotosScreen() {
   const pickImage = async (source: string) => {
     if (photos.length >= MAX_PHOTOS) return;
 
-    // Request permissions
     if (source === 'camera') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -50,18 +57,20 @@ export default function PhotosScreen() {
       ? await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        quality: 0.8,
+        quality: 0.5,
       })
       : await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
         selectionLimit: MAX_PHOTOS - photos.length,
-        quality: 0.8,
+        quality: 0.5,
       });
 
     if (!result.canceled) {
-      const uris = result.assets.map((a) => a.uri);
+      uris = result.assets.map((a) => a.uri);
       setPhotos((prev) => [...prev, ...uris].slice(0, MAX_PHOTOS));
+      setUris(uris);
+      console.log("picture was taken");
     }
   };
 
@@ -131,7 +140,11 @@ export default function PhotosScreen() {
         <TouchableOpacity
           style={[styles.nextBtn, photos.length === 0 && styles.nextBtnDisabled]}
           disabled={photos.length === 0}
-          onPress={() => router.push('/create-passport/processing')}
+          onPress={() => {
+              console.log(uris);
+              router.push('/create-passport/processing');
+            }
+          }
         >
           <Text style={styles.nextBtnText}>Analyze photos →</Text>
         </TouchableOpacity>

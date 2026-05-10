@@ -6,19 +6,32 @@ import {
   SafeAreaView,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
+import { askAI } from '../../lib/ai/huggingface'
+import {usePassportStore} from '../../store/usePassportStore';
 
-const STEPS = [
-  'Scanning materials',
-  'Identifying textures',
-  'Generating description',
-  'Scoring sustainability',
-  'Building passport',
-];
 
 export default function ProcessingScreen() {
+  const setResponse = usePassportStore((s) => s.setResponse);
+  const uris = usePassportStore((s) => s.uris);
+  console.log("type of: ", typeof uris);
+  console.log(uris)
+
+  const STEPS = [
+    {label: 'Scanning materials', task: async () => {
+        const result = await askAI(uris); 
+        setResponse(result);
+        console.log("AI response", result);
+      }
+    },
+    {label: 'Identifying textures', task: () => console.log('Identifying textures')},
+    {label: 'Generating description', task: () => console.log('Generating Description')},
+    {label: 'Scoring sustainability', task: () => console.log('Scoring sustainability')},
+    {label: 'Building passport', task: ()=> console.log('Building passport')},
+  ];
+
   const router = useRouter();
   const [completed, setCompleted] = useState(0);
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -34,18 +47,14 @@ export default function ProcessingScreen() {
   }, []);
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    STEPS.forEach((_, i) => {
-      timers.push(
-        setTimeout(() => {
-          setCompleted(i + 1);
-          if (i === STEPS.length - 1) {
-            setTimeout(() => router.push('/create-passport/review'), 600);
-          }
-        }, (i + 1) * 1100)
-      );
-    });
-    return () => timers.forEach(clearTimeout);
+    async function runSteps() {
+      for (let i = 0; i < STEPS.length; i++) {
+        await STEPS[i].task();
+        setCompleted(i+1);
+      }
+      setTimeout(() => router.push('/create-passport/review'), 600);
+    }
+    runSteps();
   }, []);
 
   const spin = spinValue.interpolate({
@@ -79,7 +88,7 @@ export default function ProcessingScreen() {
             const done = i < completed;
             const active = i === completed;
             return (
-              <View key={step} style={styles.row}>
+              <View key={i} style={styles.row}>
                 <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
                   {done && <Text style={styles.check}>✓</Text>}
                 </View>
@@ -88,7 +97,7 @@ export default function ProcessingScreen() {
                   done && styles.stepDone,
                   active && styles.stepActive,
                 ]}>
-                  {step}
+                  {step.label}
                 </Text>
               </View>
             );
