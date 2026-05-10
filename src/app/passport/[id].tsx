@@ -1,15 +1,16 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
+  ScrollView,
   Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 // Mock passport data — replace with API/store lookup in production
 const PASSPORTS: Record<string, {
@@ -62,6 +63,7 @@ export default function PassportDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const passport = PASSPORTS[id ?? ''] ?? FALLBACK;
+  const insets = useSafeAreaInsets();
 
   const handleShare = async () => {
     await Share.share({
@@ -74,7 +76,7 @@ export default function PassportDetailScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
         {/* Nav */}
-        <View style={styles.nav}>
+        <View style={[styles.nav, { paddingTop: insets.top }]}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.navBack}>← Back</Text>
           </TouchableOpacity>
@@ -162,7 +164,7 @@ export default function PassportDetailScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.white },
-  container: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: 110 },
+  container: { paddingHorizontal: Spacing.xl, paddingBottom: 110 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xl },
   navBack: { fontSize: Typography.base, color: Colors.primary },
   navShare: { fontSize: Typography.base, color: Colors.primary, fontWeight: '600' },
