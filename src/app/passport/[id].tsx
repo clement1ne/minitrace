@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+import { usePassportStore } from '../../store/usePassportStore';
 
 // Mock passport data — replace with API/store lookup in production
 const PASSPORTS: Record<string, {
@@ -63,6 +64,7 @@ export default function PassportDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const passport = PASSPORTS[id ?? ''] ?? FALLBACK;
+  const hash = usePassportStore((s) => s.hash);
   const insets = useSafeAreaInsets();
 
   const handleShare = async () => {
@@ -115,6 +117,13 @@ export default function PassportDetailScreen() {
             <Text style={styles.infoVal}>{row.value}</Text>
           </View>
         ))}
+
+        {hash ? (
+          <View style={[styles.infoRow, styles.infoRowBorder]}>
+            <Text style={styles.infoKey}>Content fingerprint</Text>
+            <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">{hash.slice(0, 16)}...</Text>
+          </View>
+        ) : null}
 
         <View style={styles.divider} />
 
@@ -189,6 +198,7 @@ const styles = StyleSheet.create({
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   infoKey: { fontSize: Typography.base, color: Colors.gray400 },
   infoVal: { fontSize: Typography.base, fontWeight: '600', color: Colors.black },
+  hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, maxWidth: 160 },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   scoreBadge: { backgroundColor: Colors.primaryLight, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.sm },
   scoreBadgeText: { fontSize: Typography.base, fontWeight: '700', color: Colors.primaryDark },

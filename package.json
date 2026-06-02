@@ -21,9 +21,11 @@
     "@supabase/supabase-js": "^2.105.1",
     "dotenv": "^17.4.2",
     "env": "^0.0.2",
+<<<<<<< HEAD
     "expo": "~56.0.8",
     "expo-camera": "~56.0.7",
     "expo-constants": "~56.0.16",
+    "expo-crypto": "^56.0.4",
     "expo-device": "~56.0.4",
     "expo-file-system": "~56.0.7",
     "expo-font": "~56.0.5",
@@ -54,6 +56,8 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~55.0.1",
   },
   "private": true
 }

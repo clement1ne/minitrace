@@ -16,9 +16,11 @@ import { StepIndicator } from '../../components/StepIndicator';
 import { usePassportStore } from '../../store/usePassportStore';
 import { useUserStore } from '@/store/useUserStore';
 import { askAIOnNewScore } from '@/lib/ai/huggingface';
+import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
 
 export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
+    const hash = usePassportStore((s) => s.hash);
     const originalResponse = usePassportStore((s) => s.response);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
@@ -73,7 +75,21 @@ export default function PreviewScreen() {
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Publish',
-                    onPress: () => router.replace(`/passport/${PASSPORT.id}`),
+                    onPress: async () => {
+                        const user = await getCurrentUser();
+                        if (!user) return;
+                        await createPassport({
+                            user_id: user.id,
+                            product_name: PASSPORT.name,
+                            material: PASSPORT.material,
+                            origin: PASSPORT.origin,
+                            method: PASSPORT.method,
+                            sustainability_score: Number(PASSPORT.score) || 0,
+                            description: PASSPORT.description,
+                            content_hash: hash,
+                        });
+                        router.replace(`/passport/${PASSPORT.id}`);
+                    },
                 },
             ]
         );
@@ -121,7 +137,7 @@ export default function PreviewScreen() {
                     {DETAILS.map((d, i) => (
                         <View key={d.key} style={[styles.detailRow, i < DETAILS.length - 1 && styles.detailRowBorder]}>
                             <Text style={styles.detailKey}>{d.key}</Text>
-                            <Text style={styles.detailVal}>{d.val ?? d.value}</Text>
+                            <Text style={styles.detailVal}>{d.value ?? '-'}</Text>
                         </View>
                     ))}
 

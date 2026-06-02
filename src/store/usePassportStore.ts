@@ -1,25 +1,29 @@
 import { create } from 'zustand';
 
 type PassportStore = {
-  uris: string[];
-  setUris: (uris: string[]) => void;
-  clearUris: () => void;
-  response: any;
-  setResponse: (response: any) => void;
-  editedResponse: any;
-  setEditedResponse: (editedResponse: any) => void;
-  category: any;
-  setCategory: (category: any) => void;
+    uris: string[];
+    setUris: (uris: string[]) => void;
+    clearUris: () => void;
+    response: any;
+    setResponse: (response: any) => void;
+    editedResponse: any;
+    setEditedResponse: (editedResponse: any) => void;
+    category: any;
+    setCategory: (category: any) => void;
+    hash: string;
+    setHash: (hash: string) => void;
 };
 
 export const usePassportStore = create<PassportStore>((set) => ({
-  uris: [],
-  setUris: (uris) => set({ uris }),
-  clearUris: () => set({ uris: [] }),
-  response: null,
-  setResponse: (response) => set({ response }),
-  editedResponse: null,
-  setEditedResponse: (editedResponse) => set({ editedResponse }),
-  category: null,
-  setCategory: (category) => set({ category })
+    uris: [],
+    setUris: (uris) => set({ uris }),
+    clearUris: () => set({ uris: [] }),
+    response: null,
+    setResponse: (response) => set({ response }),
+    editedResponse: null,
+    setEditedResponse: (editedResponse) => set({ editedResponse }),
+    category: null,
+    setCategory: (category) => set({ category }),
+    hash: '',
+    setHash: (hash) => set({ hash }),
 }));
