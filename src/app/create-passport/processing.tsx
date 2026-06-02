@@ -1,166 +1,199 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Animated,
+    View,
+    Text,
+    StyleSheet,
+    SafeAreaView,
+    Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
 import { askAI } from '../../lib/ai/huggingface'
-import {usePassportStore} from '../../store/usePassportStore';
+import { usePassportStore } from '../../store/usePassportStore';
+import { CategoryMismatchModal } from '@/components/CategoryMismatchModal';
 
 
 export default function ProcessingScreen() {
-  const setResponse = usePassportStore((s) => s.setResponse);
-  const uris = usePassportStore((s) => s.uris);
-  console.log("type of: ", typeof uris);
-  console.log(uris)
+    const setResponse = usePassportStore((s) => s.setResponse);
+    const uris = usePassportStore((s) => s.uris);
+    const clearUris = usePassportStore((s) => s.clearUris);
+    const [mismatchVisible, setMismatchVisible] = useState(false);
+    const [mismatchMessage, setMismatchMessage] = useState('');
+    const category = usePassportStore((s) => s.category);
+    let success = true;
 
-  const STEPS = [
-    {label: 'Scanning materials', task: async () => {
-        const result = await askAI(uris); 
-        setResponse(result);
-        console.log("AI response", result);
-      }
-    },
-    {label: 'Identifying textures', task: () => console.log('Identifying textures')},
-    {label: 'Generating description', task: () => console.log('Generating Description')},
-    {label: 'Scoring sustainability', task: () => console.log('Scoring sustainability')},
-    {label: 'Building passport', task: ()=> console.log('Building passport')},
-  ];
+    console.log("type of: ", typeof uris);
+    console.log(uris)
 
-  const router = useRouter();
-  const [completed, setCompleted] = useState(0);
-  const spinValue = useRef(new Animated.Value(0)).current;
+    const STEPS = [
+        {
+            label: 'Scanning materials', task: async () => {
+                const result = await askAI(uris, category);
 
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
+                if (result.error) {
+                    setMismatchMessage(result.message);
+                    setMismatchVisible(true);
+                    success = false;
+                    return;
+                }
+                setResponse(result);
+                success = true;
+                console.log("AI response", result);
+            }
+        },
+        { label: 'Identifying textures', task: () => console.log('Identifying textures') },
+        { label: 'Generating description', task: () => console.log('Generating Description') },
+        { label: 'Scoring sustainability', task: () => console.log('Scoring sustainability') },
+        { label: 'Building passport', task: () => console.log('Building passport') },
+    ];
 
-  useEffect(() => {
-    async function runSteps() {
-      for (let i = 0; i < STEPS.length; i++) {
-        await STEPS[i].task();
-        setCompleted(i+1);
-      }
-      setTimeout(() => router.push('/create-passport/review'), 600);
-    }
-    runSteps();
-  }, []);
+    const router = useRouter();
+    const [completed, setCompleted] = useState(0);
+    const spinValue = useRef(new Animated.Value(0)).current;
 
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(spinValue, {
+                toValue: 1,
+                duration: 900,
+                useNativeDriver: true,
+            })
+        ).start();
+    }, []);
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+    useEffect(() => {
+        async function runSteps() {
+            if (success) {
+                for (let i = 0; i < STEPS.length; i++) {
+                    await STEPS[i].task();
+                    setCompleted(i + 1);
+                }
+                setTimeout(() => router.push('/create-passport/review'), 600);
+            }
+        }
+        runSteps();
+    }, []);
 
-        <StepIndicator current={3} total={5} />
+    const spin = spinValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
 
-        <Text style={styles.stepLabel}>Step 3 of 5</Text>
-        <Text style={styles.title}>Analyzing your product</Text>
-        <Text style={styles.subtitle}>
-          Our AI is reading your photos and building your passport. This takes about 10–20 seconds.
-        </Text>
+    return (
+        <SafeAreaView style={styles.safe}>
+            <View style={styles.container}>
 
-        {/* Spinner */}
-        <View style={styles.spinnerWrap}>
-          <Animated.View style={[styles.spinnerRing, { transform: [{ rotate: spin }] }]} />
-          <View style={styles.spinnerCore}>
-            <Text style={styles.spinnerEmoji}>✨</Text>
-          </View>
-        </View>
+                <StepIndicator current={3} total={5} />
 
-        {/* Checklist */}
-        <View style={styles.checklist}>
-          {STEPS.map((step, i) => {
-            const done = i < completed;
-            const active = i === completed;
-            return (
-              <View key={i} style={styles.row}>
-                <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
-                  {done && <Text style={styles.check}>✓</Text>}
-                </View>
-                <Text style={[
-                  styles.stepText,
-                  done && styles.stepDone,
-                  active && styles.stepActive,
-                ]}>
-                  {step.label}
+                <Text style={styles.stepLabel}>Step 3 of 5</Text>
+                <Text style={styles.title}>Analyzing your product</Text>
+                <Text style={styles.subtitle}>
+                    Our AI is reading your photos and building your passport. This takes about 10–20 seconds.
                 </Text>
-              </View>
-            );
-          })}
-        </View>
 
-      </View>
-    </SafeAreaView>
-  );
+                {/* Spinner */}
+                <View style={styles.spinnerWrap}>
+                    <Animated.View style={[styles.spinnerRing, { transform: [{ rotate: spin }] }]} />
+                    <View style={styles.spinnerCore}>
+                        <Text style={styles.spinnerEmoji}>✨</Text>
+                    </View>
+                </View>
+
+                {/* Checklist */}
+                <View style={styles.checklist}>
+                    {STEPS.map((step, i) => {
+                        const done = i < completed;
+                        const active = i === completed;
+                        return (
+                            <View key={i} style={styles.row}>
+                                <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
+                                    {done && <Text style={styles.check}>✓</Text>}
+                                </View>
+                                <Text style={[
+                                    styles.stepText,
+                                    done && styles.stepDone,
+                                    active && styles.stepActive,
+                                ]}>
+                                    {step.label}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
+
+            </View>
+
+            <CategoryMismatchModal
+                visible={mismatchVisible}
+                category={category}
+                message={mismatchMessage}
+                onRetake={() => {
+                    setMismatchVisible(false);
+                    clearUris();
+                    router.back();             // go back to photo capture screen
+                }}
+                onChangeCategory={() => {
+                    setMismatchVisible(false);
+                    router.push('/create-passport/start'); // go back to category picker
+                }}
+            />
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.white },
-  container: { flex: 1, paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl },
-  stepLabel: { fontSize: Typography.xs, color: Colors.gray400, marginBottom: Spacing.xs },
-  title: { fontSize: Typography.xxl, fontWeight: '700', color: Colors.black, marginBottom: Spacing.xs },
-  subtitle: { fontSize: Typography.base, color: Colors.gray600, lineHeight: 22, marginBottom: 40 },
-  spinnerWrap: {
-    width: 88,
-    height: 88,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  spinnerRing: {
-    position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 4,
-    borderColor: Colors.borderLight,
-    borderTopColor: Colors.primary,
-  },
-  spinnerCore: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinnerEmoji: { fontSize: 24 },
-  checklist: {
-    backgroundColor: Colors.gray50,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotDone: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  dotActive: { borderColor: Colors.primary },
-  check: { color: Colors.white, fontSize: 11, fontWeight: '700' },
-  stepText: { fontSize: Typography.base, color: Colors.gray400 },
-  stepDone: { color: Colors.black, fontWeight: '500' },
-  stepActive: { color: Colors.primary, fontWeight: '500' },
+    safe: { flex: 1, backgroundColor: Colors.white },
+    container: { flex: 1, paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl },
+    stepLabel: { fontSize: Typography.xs, color: Colors.gray400, marginBottom: Spacing.xs },
+    title: { fontSize: Typography.xxl, fontWeight: '700', color: Colors.black, marginBottom: Spacing.xs },
+    subtitle: { fontSize: Typography.base, color: Colors.gray600, lineHeight: 22, marginBottom: 40 },
+    spinnerWrap: {
+        width: 88,
+        height: 88,
+        alignSelf: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 40,
+    },
+    spinnerRing: {
+        position: 'absolute',
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        borderWidth: 4,
+        borderColor: Colors.borderLight,
+        borderTopColor: Colors.primary,
+    },
+    spinnerCore: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: Colors.primaryLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    spinnerEmoji: { fontSize: 24 },
+    checklist: {
+        backgroundColor: Colors.gray50,
+        borderRadius: Radius.lg,
+        padding: Spacing.lg,
+        gap: Spacing.md,
+    },
+    row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    dot: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dotDone: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    dotActive: { borderColor: Colors.primary },
+    check: { color: Colors.white, fontSize: 11, fontWeight: '700' },
+    stepText: { fontSize: Typography.base, color: Colors.gray400 },
+    stepDone: { color: Colors.black, fontWeight: '500' },
+    stepActive: { color: Colors.primary, fontWeight: '500' },
 });
