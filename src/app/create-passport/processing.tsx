@@ -7,6 +7,8 @@ import {
   Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as Crypto from 'expo-crypto';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
 import { askAI } from '../../lib/ai/huggingface'
@@ -15,6 +17,7 @@ import {usePassportStore} from '../../store/usePassportStore';
 
 export default function ProcessingScreen() {
   const setResponse = usePassportStore((s) => s.setResponse);
+  const setHash = usePassportStore((s) => s.setHash);
   const uris = usePassportStore((s) => s.uris);
   console.log("type of: ", typeof uris);
   console.log(uris)
@@ -24,6 +27,19 @@ export default function ProcessingScreen() {
         const result = await askAI(uris); 
         setResponse(result);
         console.log("AI response", result);
+
+        const base64Parts: string[] = [];
+        for (const uri of uris) {
+          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+          base64Parts.push(base64);
+        }
+        const combined = base64Parts.join('') + JSON.stringify(result);
+        const contentHash = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          combined
+        );
+        setHash(contentHash);
+        console.log("Content hash", contentHash);
       }
     },
     {label: 'Identifying textures', task: () => console.log('Identifying textures')},

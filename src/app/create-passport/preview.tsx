@@ -12,9 +12,11 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
 import { usePassportStore } from '../../store/usePassportStore';
+import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
 
 export default function PreviewScreen() {
   const response = usePassportStore((s) => s.response);
+  const hash = usePassportStore((s) => s.hash);
   console.log("preview response: ", response);
   
   const PASSPORT = {
@@ -43,7 +45,21 @@ export default function PreviewScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Publish',
-          onPress: () => router.replace(`/passport/${PASSPORT.id}`),
+          onPress: async () => {
+            const user = await getCurrentUser();
+            if (!user) return;
+            await createPassport({
+              user_id: user.id,
+              product_name: PASSPORT.name,
+              material: PASSPORT.material,
+              origin: PASSPORT.origin,
+              method: PASSPORT.method,
+              sustainability_score: Number(PASSPORT.score) || 0,
+              description: PASSPORT.description,
+              content_hash: hash,
+            });
+            router.replace(`/passport/${PASSPORT.id}`);
+          },
         },
       ]
     );
@@ -94,6 +110,16 @@ export default function PreviewScreen() {
               <Text style={styles.detailVal}>{d.val ?? d.value}</Text>
             </View>
           ))}
+
+          <View style={styles.divider} />
+
+          {/* Content fingerprint */}
+          <View style={styles.hashRow}>
+            <Text style={styles.hashLabel}>Content fingerprint</Text>
+            <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">
+              {hash ? `${hash.slice(0, 16)}...` : 'Pending...'}
+            </Text>
+          </View>
 
           <View style={styles.divider} />
 
@@ -173,6 +199,9 @@ const styles = StyleSheet.create({
   detailRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   detailKey: { fontSize: Typography.sm, color: Colors.gray400 },
   detailVal: { fontSize: Typography.sm, fontWeight: '600', color: Colors.black },
+  hashRow: { marginBottom: 4 },
+  hashLabel: { fontSize: Typography.sm, color: Colors.gray400, marginBottom: 2 },
+  hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, fontFamily: 'monospace' },
   scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   scoreLabel: { fontSize: Typography.sm, fontWeight: '600', color: Colors.black },
   scoreBadge: { backgroundColor: Colors.primaryLight, paddingHorizontal: Spacing.md, paddingVertical: 3, borderRadius: Radius.sm },

@@ -6,6 +6,8 @@ type PassportStore = {
   clearUris: () => void;
   response: any;
   setResponse: (response: any) => void;
+  hash: string;
+  setHash: (hash: string) => void;
 };
 
 export const usePassportStore = create<PassportStore>((set) => ({
@@ -14,4 +16,6 @@ export const usePassportStore = create<PassportStore>((set) => ({
   clearUris: () => set({ uris: [] }),
   response: null,
   setResponse: (response) => set({ response }),
+  hash: '',
+  setHash: (hash) => set({ hash }),
 }));
