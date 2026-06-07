@@ -1,4 +1,4 @@
-import { getProvider, getSigner, getContract, getPolygonScanUrl } from "./config";
+import { getProvider, getSigner, getContract } from "./config";
 
 function toBytes32(hex: string): string {
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -51,4 +51,3 @@ export async function verifyHashOnChain(
   };
 }
 
-export { getPolygonScanUrl };

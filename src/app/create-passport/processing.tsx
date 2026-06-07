@@ -11,7 +11,7 @@ import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
-import { askAI } from '../../lib/ai/huggingface'
+import { askAI } from '../../lib/ai/huggingface';
 import { usePassportStore } from '../../store/usePassportStore';
 import { CategoryMismatchModal } from '@/components/CategoryMismatchModal';
 import { recordHashOnChain } from '../../lib/blockchain/polygon';
@@ -60,12 +60,11 @@ export default function ProcessingScreen() {
             label: 'Recording on blockchain', task: async () => {
                 try {
                     const state = usePassportStore.getState();
-                    const passportId = state.response?.id;
-                    if (!passportId || !state.hash) {
-                        console.log('Skipping blockchain: no passport ID or hash');
+                    if (!state.hash) {
+                        console.log('Skipping blockchain: no hash');
                         return;
                     }
-                    const { txHash } = await recordHashOnChain(String(passportId), state.hash);
+                    const { txHash } = await recordHashOnChain(state.hash, state.hash);
                     setBlockchainTxHash(txHash);
                     console.log('Blockchain tx:', txHash);
                 } catch (err: any) {
