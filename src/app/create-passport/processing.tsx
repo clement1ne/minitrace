@@ -6,7 +6,7 @@ import {
     SafeAreaView,
     Animated,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
@@ -14,6 +14,7 @@ import { StepIndicator } from '../../components/StepIndicator';
 import { askAI } from '../../lib/ai/huggingface'
 import { usePassportStore } from '../../store/usePassportStore';
 import { CategoryMismatchModal } from '@/components/CategoryMismatchModal';
+import { recordHashOnChain } from '../../lib/blockchain/polygon';
 
 
 export default function ProcessingScreen() {
@@ -21,6 +22,7 @@ export default function ProcessingScreen() {
     const uris = usePassportStore((s) => s.uris);
     const clearUris = usePassportStore((s) => s.clearUris);
     const setHash = usePassportStore((s) => s.setHash);
+    const setBlockchainTxHash = usePassportStore((s) => s.setBlockchainTxHash);
     const [mismatchVisible, setMismatchVisible] = useState(false);
     const [mismatchMessage, setMismatchMessage] = useState('');
     const category = usePassportStore((s) => s.category);
@@ -54,6 +56,23 @@ export default function ProcessingScreen() {
         { label: 'Generating description', task: () => console.log('Generating Description') },
         { label: 'Scoring sustainability', task: () => console.log('Scoring sustainability') },
         { label: 'Building passport', task: () => console.log('Building passport') },
+        {
+            label: 'Recording on blockchain', task: async () => {
+                try {
+                    const state = usePassportStore.getState();
+                    const passportId = state.response?.id;
+                    if (!passportId || !state.hash) {
+                        console.log('Skipping blockchain: no passport ID or hash');
+                        return;
+                    }
+                    const { txHash } = await recordHashOnChain(String(passportId), state.hash);
+                    setBlockchainTxHash(txHash);
+                    console.log('Blockchain tx:', txHash);
+                } catch (err: any) {
+                    console.log('Blockchain recording skipped:', err.message);
+                }
+            }
+        },
     ];
 
     const router = useRouter();
