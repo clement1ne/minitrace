@@ -21,6 +21,7 @@ import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
 export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
     const hash = usePassportStore((s) => s.hash);
+    const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
     const originalResponse = usePassportStore((s) => s.response);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
@@ -87,6 +88,7 @@ export default function PreviewScreen() {
                             sustainability_score: Number(PASSPORT.score) || 0,
                             description: PASSPORT.description,
                             content_hash: hash,
+                            blockchain_tx_hash: blockchainTxHash,
                         });
                         router.replace(`/passport/${PASSPORT.id}`);
                     },
