@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: Typography.base, fontWeight: '700', color: Colors.black, marginBottom: Spacing.md },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  infoKey: { fontSize: Typography.base, color: Colors.gray400 },
-  infoVal: { fontSize: Typography.base, fontWeight: '600', color: Colors.black },
+  infoKey: { fontSize: Typography.base, color: Colors.gray400, marginRight: Spacing.sm },
+  infoVal: { flex: 1, flexShrink: 1, fontSize: Typography.base, fontWeight: '600', color: Colors.black, textAlign: 'right' },
   hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, maxWidth: 160 },
   blockchainLink: { fontSize: Typography.xs, fontWeight: '500', color: Colors.primary, maxWidth: 160 },
   blockchainBadge: {
