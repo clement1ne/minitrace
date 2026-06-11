@@ -24,7 +24,7 @@ const PASSPORTS: Record<string, {
   makerBio: string;
   material: string;
   origin: string;
-  method: string;
+  production_method: string;
   firedAt: string;
   score: number;
   scans: number;
@@ -40,7 +40,7 @@ const PASSPORTS: Record<string, {
     makerBio: 'Maria has been hand-throwing ceramics for 8 years from her home studio in Davao, Philippines.',
     material: 'Stoneware clay, natural ash glaze',
     origin: 'Davao, Philippines',
-    method: 'Wheel-thrown',
+    production_method: 'Wheel-thrown',
     firedAt: '1280°C',
     score: 7.8,
     scans: 14,
@@ -52,12 +52,12 @@ const PASSPORTS: Record<string, {
 
 const FALLBACK = PASSPORTS['0042'];
 
-const INFO_ROWS = (p: typeof FALLBACK) => [
+const INFO_ROWS = (p: typeof FALLBACK, h: string) => [
   { key: 'Material', value: p.material },
   { key: 'Made in', value: p.origin },
-  { key: 'Method', value: p.method },
+  { key: 'Method', value: p.production_method },
   { key: 'Fired at', value: p.firedAt },
-  { key: 'Passport ID', value: `#MT-${p.id}` },
+  { key: 'Passport ID', value: h ? `${h.slice(0, 16)}...` : `#MT-${p.id}` },
   { key: 'Created', value: p.createdAt },
   { key: 'QR scans', value: String(p.scans) },
 ];
@@ -111,10 +111,10 @@ export default function PassportDetailScreen() {
 
         {/* Info rows */}
         <Text style={styles.sectionTitle}>Product details</Text>
-        {INFO_ROWS(passport).map((row, i) => (
+        {INFO_ROWS(passport, hash).map((row, i) => (
           <View
             key={row.key}
-            style={[styles.infoRow, i < INFO_ROWS(passport).length - 1 && styles.infoRowBorder]}
+            style={[styles.infoRow, i < INFO_ROWS(passport, hash).length - 1 && styles.infoRowBorder]}
           >
             <Text style={styles.infoKey}>{row.key}</Text>
             <Text style={styles.infoVal}>{row.value}</Text>

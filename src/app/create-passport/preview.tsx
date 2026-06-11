@@ -23,6 +23,7 @@ export default function PreviewScreen() {
     const hash = usePassportStore((s) => s.hash);
     const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
     const originalResponse = usePassportStore((s) => s.response);
+    const category = usePassportStore((s) => s.category);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
     useEffect(() => {
@@ -56,15 +57,15 @@ export default function PreviewScreen() {
         maker: currentName,
         material: response?.material ?? '-',
         origin: response?.origin ?? '-',
-        method: response?.method ?? '-',
+        production_method: response?.production_method ?? '-',
         score: SCORE ?? '-',
         description: response?.description ?? '-',
     };
     const DETAILS = [
         { key: 'Material', value: PASSPORT.material },
         { key: 'Made in', value: PASSPORT.origin },
-        { key: 'Method', value: PASSPORT.method },
-        { key: 'Passport ID', value: `#MT-${PASSPORT.id}` },
+        { key: 'Method', value: PASSPORT.production_method },
+        { key: 'Passport ID', value: hash ? `${hash.slice(0, 16)}...` : '-' },
     ];
     const router = useRouter();
 
@@ -84,10 +85,11 @@ export default function PreviewScreen() {
                             product_name: PASSPORT.name,
                             material: PASSPORT.material,
                             origin: PASSPORT.origin,
-                            method: PASSPORT.method,
+                            production_method: PASSPORT.production_method,
                             sustainability_score: Number(PASSPORT.score) || 0,
                             description: PASSPORT.description,
                             content_hash: hash,
+                            category: category ?? '',
                             blockchain_tx_hash: blockchainTxHash,
                         });
                         router.replace(`/passport/${PASSPORT.id}`);

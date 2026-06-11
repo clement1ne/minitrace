@@ -22,7 +22,7 @@ export default function ReviewScreen() {
     const [materials, setMaterials] = useState(response?.material ?? '-');
     const [description, setDescription] = useState(response?.description ?? '-');
     const [origin, setOrigin] = useState(response?.origin ?? '-');
-    const [method, setMethod] = useState(response?.method ?? '-');
+    const [method, setMethod] = useState(response?.production_method ?? '-');
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
 
     return (
@@ -108,7 +108,7 @@ export default function ReviewScreen() {
                             material: materials,
                             description: description,
                             origin: origin,
-                            method: method,
+                            production_method: method,
                         })
                         router.push('/create-passport/preview')
                     }

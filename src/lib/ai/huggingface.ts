@@ -80,7 +80,7 @@ export async function askAI(imageURI: string | string[], category: string) {
                                 "name": "product name",
                                 "material": "main material(s) used",
                                 "origin": "Likely country and city of user",
-                                "method": "manufacturing method",
+                                "production_method": "manufacturing method",
                                 "sustainability_score": "A 0-10 scoring product sustainability based on ${sustainabilityScore}",
                                 "description": "one sentence description of the product"
                                 }
