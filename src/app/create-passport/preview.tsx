@@ -24,22 +24,48 @@ export default function PreviewScreen() {
     const originalResponse = usePassportStore((s) => s.response);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
+    console.log("Edited response: ", response);
     useEffect(() => {
         async function computeNewScore() {
-            if (JSON.stringify(response) !== JSON.stringify(originalResponse)) {
-                setIsCalculatingScore(true);
-                try {
-                    const scoreObj = await askAIOnNewScore(response);
-                    await new Promise(resolve => setTimeout(resolve, 900));
-                    setScore(scoreObj.sustainability_score);
-                } catch (err: any) {
-                    console.error("Failed to compute new Score: ", err.message);
-                    setScore('-');
-                } finally {
-                    setIsCalculatingScore(false);
-                }
+            // ✅ log both values side by side
+            console.log("=== SCORE RECOMPUTE CHECK ===");
+            console.log("response:        ", JSON.stringify(response, null, 2));
+            console.log("originalResponse:", JSON.stringify(originalResponse, null, 2));
+
+            // ✅ check field by field to find exactly what's different
+            if (response && originalResponse) {
+                Object.keys(response).forEach((key) => {
+                    const r = (response as any)[key];
+                    const o = (originalResponse as any)[key];
+                    if (JSON.stringify(r) !== JSON.stringify(o)) {
+                        console.log(`❌ DIFFERENCE in "${key}":`, { response: r, original: o });
+                    } else {
+                        console.log(`✅ SAME "${key}":`, r);
+                    }
+                });
+            }
+
+            const isDifferent = JSON.stringify(response) !== JSON.stringify(originalResponse);
+            console.log("isDifferent:", isDifferent);
+
+            if (!isDifferent) {
+                console.log("⏭️ Skipping score recompute — no changes detected");
+                return;
+            }
+
+            setIsCalculatingScore(true);
+            try {
+                const scoreObj = await askAIOnNewScore(response);
+                await new Promise(resolve => setTimeout(resolve, 900));
+                setScore(scoreObj.sustainability_score);
+            } catch (err: any) {
+                console.error("Failed to compute new Score: ", err.message);
+                setScore('-');
+            } finally {
+                setIsCalculatingScore(false);
             }
         }
+
         if (response && originalResponse) {
             computeNewScore();
         }
@@ -75,21 +101,22 @@ export default function PreviewScreen() {
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Publish',
-                    onPress: async () => {
+                    /*onPress: async () => {
                         const user = await getCurrentUser();
                         if (!user) return;
                         await createPassport({
                             user_id: user.id,
                             product_name: PASSPORT.name,
                             material: PASSPORT.material,
-                            origin: PASSPORT.origin,
+                       r  r origin: PASSPORT.origin,
                             method: PASSPORT.method,
                             sustainability_score: Number(PASSPORT.score) || 0,
                             description: PASSPORT.description,
                             content_hash: hash,
                         });
                         router.replace(`/passport/${PASSPORT.id}`);
-                    },
+                    },*/
+                    onPress: () => router.replace(`/passport/${PASSPORT.id}`),
                 },
             ]
         );
@@ -143,6 +170,16 @@ export default function PreviewScreen() {
 
                     <View style={styles.divider} />
 
+                    {/* Content fingerprint */}
+                    <View style={styles.hashRow}>
+                        <Text style={styles.hashLabel}>Content fingerprint</Text>
+                        <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">
+                            {hash ? `${hash.slice(0, 16)}...` : 'Pending...'}
+                        </Text>
+                    </View>
+
+                    <View style={styles.divider} />
+
                     {/* Eco score */}
                     <View style={styles.scoreRow}>
                         <Text style={styles.scoreLabel}>Eco score</Text>
@@ -156,7 +193,7 @@ export default function PreviewScreen() {
                         </View>
                     </View>
                     <View style={styles.scoreBar}>
-                        <View style={[styles.scoreBarFill, { width: `${(PASSPORT.score / 10) * 100}%` }]} />
+                        <View style={[styles.scoreBarFill, { width: `${(Number(PASSPORT.score) / 10) * 100}%` }]} />
                     </View>
 
                 </View>
@@ -236,6 +273,9 @@ const styles = StyleSheet.create({
     detailRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
     detailKey: { fontSize: Typography.sm, color: Colors.gray400 },
     detailVal: { fontSize: Typography.sm, fontWeight: '600', color: Colors.black },
+    hashRow: { marginBottom: 4 },
+    hashLabel: { fontSize: Typography.sm, color: Colors.gray400, marginBottom: 2 },
+    hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, fontFamily: 'monospace' },
     scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
     scoreLabel: { fontSize: Typography.sm, fontWeight: '600', color: Colors.black },
     scoreBadge: { backgroundColor: Colors.primaryLight, paddingHorizontal: Spacing.md, paddingVertical: 3, borderRadius: Radius.sm },

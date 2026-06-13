@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
         color: Colors.black,
         backgroundColor: Colors.gray50,
     },
-    //inputError: { borderColor: Colors.danger },
-    //errorText: { fontSize: Typography.xs, color: Colors.danger, marginTop: 4 },
+    inputError: { borderColor: Colors.danger },
+    errorText: { fontSize: Typography.xs, color: Colors.danger, marginTop: 4 },
     forgotWrap: {
         alignSelf: 'flex-end',
         marginTop: Spacing.sm,

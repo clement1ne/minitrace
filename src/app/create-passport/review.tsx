@@ -106,9 +106,10 @@ export default function ReviewScreen() {
                         setEditedResponse({
                             name: productName,
                             material: materials,
-                            description: description,
                             origin: origin,
                             method: method,
+                            sustainability_score: SCORE,
+                            description: description,
                         })
                         router.push('/create-passport/preview')
                     }

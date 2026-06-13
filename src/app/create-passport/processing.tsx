@@ -33,7 +33,14 @@ export default function ProcessingScreen() {
         {
             label: 'Scanning materials', task: async () => {
                 const result = await askAI(uris, category);
+                if (result.error) {
+                    setMismatchMessage(result.message);
+                    setMismatchVisible(true);
+                    success = false;
+                    return;
+                }
                 setResponse(result);
+                success = true;
                 console.log("AI response", result);
 
                 const base64Parts: string[] = [];
