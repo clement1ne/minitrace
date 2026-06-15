@@ -12,9 +12,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Colors, Typography, Spacing, Radius } from '../constants/theme';
 import { StepIndicator } from '../../components/StepIndicator';
 import { askAI } from '../../lib/ai/huggingface'
-import { usePassportStore } from '../../store/usePassportStore';
 import { CategoryMismatchModal } from '@/components/CategoryMismatchModal';
-
+import { usePassportStore } from '@/store/usePassportStore';
 
 export default function ProcessingScreen() {
     const setResponse = usePassportStore((s) => s.setResponse);
