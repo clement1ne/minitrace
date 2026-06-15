@@ -21,7 +21,9 @@ import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
 export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
     const hash = usePassportStore((s) => s.hash);
+    const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
     const originalResponse = usePassportStore((s) => s.response);
+    const category = usePassportStore((s) => s.category);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
     console.log("Edited response: ", response);
@@ -33,7 +35,7 @@ export default function PreviewScreen() {
             console.log("originalResponse:", JSON.stringify(originalResponse, null, 2));
 
             // ✅ check field by field to find exactly what's different
-            if (response && originalResponse) {
+            /*if (response && originalResponse) {
                 Object.keys(response).forEach((key) => {
                     const r = (response as any)[key];
                     const o = (originalResponse as any)[key];
@@ -46,6 +48,18 @@ export default function PreviewScreen() {
             }
 
             const isDifferent = JSON.stringify(response) !== JSON.stringify(originalResponse);
+            console.log("isDifferent:", isDifferent);
+
+            if (!isDifferent) {
+                console.log("⏭️ Skipping score recompute — no changes detected"); return;
+            }*/
+
+            const editableFields = ['name', 'material', 'origin', 'production_method', 'description'];
+
+            const isDifferent = editableFields.some(
+                (key) => (response as any)[key] !== (originalResponse as any)[key]
+            );
+
             console.log("isDifferent:", isDifferent);
 
             if (!isDifferent) {
@@ -81,15 +95,15 @@ export default function PreviewScreen() {
         maker: currentName,
         material: response?.material ?? '-',
         origin: response?.origin ?? '-',
-        method: response?.method ?? '-',
+        production_method: response?.production_method ?? '-',
         score: SCORE ?? '-',
         description: response?.description ?? '-',
     };
     const DETAILS = [
         { key: 'Material', value: PASSPORT.material },
         { key: 'Made in', value: PASSPORT.origin },
-        { key: 'Method', value: PASSPORT.method },
-        { key: 'Passport ID', value: `#MT-${PASSPORT.id}` },
+        { key: 'Method', value: PASSPORT.production_method },
+        { key: 'Passport ID', value: hash ? `${hash.slice(0, 16)}...` : '-' },
     ];
     const router = useRouter();
 
@@ -101,22 +115,23 @@ export default function PreviewScreen() {
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Publish',
-                    /*onPress: async () => {
+                    onPress: async () => {
                         const user = await getCurrentUser();
                         if (!user) return;
                         await createPassport({
                             user_id: user.id,
                             product_name: PASSPORT.name,
                             material: PASSPORT.material,
-                       r  r origin: PASSPORT.origin,
-                            method: PASSPORT.method,
+                            origin: PASSPORT.origin,
+                            production_method: PASSPORT.production_method,
                             sustainability_score: Number(PASSPORT.score) || 0,
                             description: PASSPORT.description,
                             content_hash: hash,
+                            category: category ?? '',
+                            blockchain_tx_hash: blockchainTxHash,
                         });
                         router.replace(`/passport/${PASSPORT.id}`);
-                    },*/
-                    onPress: () => router.replace(`/passport/${PASSPORT.id}`),
+                    },
                 },
             ]
         );
@@ -271,8 +286,8 @@ const styles = StyleSheet.create({
     divider: { height: 1, backgroundColor: Colors.border, marginBottom: Spacing.md },
     detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm },
     detailRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-    detailKey: { fontSize: Typography.sm, color: Colors.gray400 },
-    detailVal: { fontSize: Typography.sm, fontWeight: '600', color: Colors.black },
+    detailKey: { fontSize: Typography.sm, color: Colors.gray400, marginRight: Spacing.sm },
+    detailVal: { flex: 1, flexShrink: 1, fontSize: Typography.sm, fontWeight: '600', color: Colors.black, textAlign: 'right' },
     hashRow: { marginBottom: 4 },
     hashLabel: { fontSize: Typography.sm, color: Colors.gray400, marginBottom: 2 },
     hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, fontFamily: 'monospace' },

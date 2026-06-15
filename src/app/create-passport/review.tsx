@@ -22,8 +22,8 @@ export default function ReviewScreen() {
     const [materials, setMaterials] = useState(response?.material ?? '-');
     const [description, setDescription] = useState(response?.description ?? '-');
     const [origin, setOrigin] = useState(response?.origin ?? '-');
-    const [method, setMethod] = useState(response?.method ?? '-');
-    const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
+    const [method, setMethod] = useState(response?.production_method ?? '-');
+    const [SCORE, setScore] = useState(Number(response?.sustainability_score) ?? 0);
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -107,8 +107,8 @@ export default function ReviewScreen() {
                             name: productName,
                             material: materials,
                             origin: origin,
-                            method: method,
-                            sustainability_score: SCORE,
+                            production_method: method,
+                            sustainability_score: Number(SCORE),
                             description: description,
                         })
                         router.push('/create-passport/preview')

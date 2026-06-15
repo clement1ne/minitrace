@@ -12,6 +12,8 @@ type PassportStore = {
     setCategory: (category: any) => void;
     hash: string;
     setHash: (hash: string) => void;
+    blockchainTxHash: string | null;
+    setBlockchainTxHash: (blockchainTxHash: string | null) => void;
 };
 
 export const usePassportStore = create<PassportStore>((set) => ({
@@ -26,4 +28,6 @@ export const usePassportStore = create<PassportStore>((set) => ({
     setCategory: (category) => set({ category }),
     hash: '',
     setHash: (hash) => set({ hash }),
+    blockchainTxHash: null,
+    setBlockchainTxHash: (blockchainTxHash) => set({ blockchainTxHash }),
 }));

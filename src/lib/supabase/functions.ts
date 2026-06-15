@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { supabase } from '../../utils/supabase'
 
 export async function getPassports(user_id: string) {
@@ -19,10 +18,12 @@ export async function createPassport(data: {
   product_name: string;
   material: string;
   origin: string;
-  method: string;
+  production_method: string;
   sustainability_score: number;
   description: string;
   content_hash: string;
+  category: string;
+  blockchain_tx_hash?: string | null;
 }) {
   const { error } = await supabase
     .from('passports')
@@ -31,10 +32,13 @@ export async function createPassport(data: {
       product_name: data.product_name,
       material: data.material,
       origin: data.origin,
-      method: data.method,
+      production_method: data.production_method,
       sustainability_score: data.sustainability_score,
       description: data.description,
       content_hash: data.content_hash,
+      category: data.category,
+      blockchain_tx_hash: data.blockchain_tx_hash ?? null,
+      blockchain_network: data.blockchain_tx_hash ? 'polygon-amoy' : null,
       status: 'Verified',
       created_at: new Date().toISOString(),
     })

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
+  Linking,
   SafeAreaView,
   ScrollView,
   Share,
@@ -12,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 import { usePassportStore } from '../../store/usePassportStore';
+import { getPolygonScanUrl } from '../../lib/blockchain/config';
 
 // Mock passport data — replace with API/store lookup in production
 const PASSPORTS: Record<string, {
@@ -22,7 +24,7 @@ const PASSPORTS: Record<string, {
   makerBio: string;
   material: string;
   origin: string;
-  method: string;
+  production_method: string;
   firedAt: string;
   score: number;
   scans: number;
@@ -38,7 +40,7 @@ const PASSPORTS: Record<string, {
     makerBio: 'Maria has been hand-throwing ceramics for 8 years from her home studio in Davao, Philippines.',
     material: 'Stoneware clay, natural ash glaze',
     origin: 'Davao, Philippines',
-    method: 'Wheel-thrown',
+    production_method: 'Wheel-thrown',
     firedAt: '1280°C',
     score: 7.8,
     scans: 14,
@@ -50,12 +52,12 @@ const PASSPORTS: Record<string, {
 
 const FALLBACK = PASSPORTS['0042'];
 
-const INFO_ROWS = (p: typeof FALLBACK) => [
+const INFO_ROWS = (p: typeof FALLBACK, h: string) => [
   { key: 'Material', value: p.material },
   { key: 'Made in', value: p.origin },
-  { key: 'Method', value: p.method },
+  { key: 'Method', value: p.production_method },
   { key: 'Fired at', value: p.firedAt },
-  { key: 'Passport ID', value: `#MT-${p.id}` },
+  { key: 'Passport ID', value: h ? `${h.slice(0, 16)}...` : `#MT-${p.id}` },
   { key: 'Created', value: p.createdAt },
   { key: 'QR scans', value: String(p.scans) },
 ];
@@ -65,6 +67,7 @@ export default function PassportDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const passport = PASSPORTS[id ?? ''] ?? FALLBACK;
   const hash = usePassportStore((s) => s.hash);
+  const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
   const insets = useSafeAreaInsets();
 
   const handleShare = async () => {
@@ -108,10 +111,10 @@ export default function PassportDetailScreen() {
 
         {/* Info rows */}
         <Text style={styles.sectionTitle}>Product details</Text>
-        {INFO_ROWS(passport).map((row, i) => (
+        {INFO_ROWS(passport, hash).map((row, i) => (
           <View
             key={row.key}
-            style={[styles.infoRow, i < INFO_ROWS(passport).length - 1 && styles.infoRowBorder]}
+            style={[styles.infoRow, i < INFO_ROWS(passport, hash).length - 1 && styles.infoRowBorder]}
           >
             <Text style={styles.infoKey}>{row.key}</Text>
             <Text style={styles.infoVal}>{row.value}</Text>
@@ -122,6 +125,21 @@ export default function PassportDetailScreen() {
           <View style={[styles.infoRow, styles.infoRowBorder]}>
             <Text style={styles.infoKey}>Content fingerprint</Text>
             <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">{hash.slice(0, 16)}...</Text>
+          </View>
+        ) : null}
+
+        {blockchainTxHash ? (
+          <View style={[styles.infoRow, styles.infoRowBorder]}>
+            <Text style={styles.infoKey}>Blockchain tx</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(getPolygonScanUrl(blockchainTxHash))}>
+              <Text style={styles.blockchainLink}>{blockchainTxHash.slice(0, 10)}...</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {blockchainTxHash ? (
+          <View style={styles.blockchainBadge}>
+            <Text style={styles.blockchainBadgeText}>✓ Verified on Polygon</Text>
           </View>
         ) : null}
 
@@ -196,9 +214,19 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: Typography.base, fontWeight: '700', color: Colors.black, marginBottom: Spacing.md },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  infoKey: { fontSize: Typography.base, color: Colors.gray400 },
-  infoVal: { fontSize: Typography.base, fontWeight: '600', color: Colors.black },
+  infoKey: { fontSize: Typography.base, color: Colors.gray400, marginRight: Spacing.sm },
+  infoVal: { flex: 1, flexShrink: 1, fontSize: Typography.base, fontWeight: '600', color: Colors.black, textAlign: 'right' },
   hashVal: { fontSize: Typography.xs, fontWeight: '500', color: Colors.gray600, maxWidth: 160 },
+  blockchainLink: { fontSize: Typography.xs, fontWeight: '500', color: Colors.primary, maxWidth: 160 },
+  blockchainBadge: {
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+  },
+  blockchainBadgeText: { fontSize: Typography.xs, fontWeight: '600', color: Colors.primaryDark },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   scoreBadge: { backgroundColor: Colors.primaryLight, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.sm },
   scoreBadgeText: { fontSize: Typography.base, fontWeight: '700', color: Colors.primaryDark },

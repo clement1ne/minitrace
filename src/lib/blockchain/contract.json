@@ -1,0 +1,80 @@
+{
+  "address": "0xEf1Dda7Bc20f94d5f39a2Da629CB54f71fe58b44",
+  "abi": [
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "HashAnchored",
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "contentHash",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "passportId",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "recorder",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "anchorHash",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "passportId"
+        },
+        {
+          "type": "bytes32",
+          "name": "contentHash"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "verifyHash",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "contentHash"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "exists"
+        },
+        {
+          "type": "string",
+          "name": "passportId"
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp"
+        },
+        {
+          "type": "address",
+          "name": "recorder"
+        }
+      ]
+    }
+  ]
+}
