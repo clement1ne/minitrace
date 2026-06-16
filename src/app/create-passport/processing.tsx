@@ -5,8 +5,6 @@ import {
     StyleSheet,
     SafeAreaView,
     Animated,
-    ActivityIndicator,
-    TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Crypto from 'expo-crypto';
@@ -16,16 +14,12 @@ import { StepIndicator } from '../../components/StepIndicator';
 import { askAI } from '../../lib/ai/huggingface'
 import { CategoryMismatchModal } from '@/components/CategoryMismatchModal';
 import { usePassportStore } from '@/store/usePassportStore';
-import { recordHashOnChain } from '@/lib/blockchain/polygon';
 
 export default function ProcessingScreen() {
     const setResponse = usePassportStore((s) => s.setResponse);
     const uris = usePassportStore((s) => s.uris);
     const clearUris = usePassportStore((s) => s.clearUris);
     const setHash = usePassportStore((s) => s.setHash);
-    const setBlockchainTxHash = usePassportStore((s) => s.setBlockchainTxHash);
-    const setBlockchainFailed = usePassportStore((s) => s.setBlockchainFailed);
-    const blockchainFailed = usePassportStore((s) => s.blockchainFailed);
     const [mismatchVisible, setMismatchVisible] = useState(false);
     const [mismatchMessage, setMismatchMessage] = useState('');
     const category = usePassportStore((s) => s.category);
@@ -66,28 +60,10 @@ export default function ProcessingScreen() {
         { label: 'Generating description', task: () => console.log('Generating Description') },
         { label: 'Scoring sustainability', task: () => console.log('Scoring sustainability') },
         { label: 'Building passport', task: () => console.log('Building passport') },
-        {
-            label: 'Recording on blockchain', task: async () => {
-                try {
-                    const state = usePassportStore.getState();
-                    if (!state.hash) {
-                        console.log('Skipping blockchain: no hash');
-                        return;
-                    }
-                    const { txHash } = await recordHashOnChain(state.hash, state.hash);
-                    setBlockchainTxHash(txHash);
-                    console.log('Blockchain tx:', txHash);
-                } catch (err: any) {
-                    console.log('Blockchain recording skipped:', err.message);
-                    setBlockchainFailed(true);
-                }
-            }
-        },
     ];
 
     const router = useRouter();
     const [completed, setCompleted] = useState(0);
-    const [retryingBlockchain, setRetryingBlockchain] = useState(false);
     const spinValue = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -107,11 +83,7 @@ export default function ProcessingScreen() {
                     await STEPS[i].task();
                     setCompleted(i + 1);
                 }
-                setTimeout(() => {
-                    if (!usePassportStore.getState().blockchainFailed) {
-                        router.push('/create-passport/review');
-                    }
-                }, 600);
+                setTimeout(() => router.push('/create-passport/review'), 600);
             }
         }
         runSteps();
@@ -121,21 +93,6 @@ export default function ProcessingScreen() {
         inputRange: [0, 1],
         outputRange: ['0deg', '360deg'],
     });
-
-    const handleRetryBlockchain = async () => {
-        setRetryingBlockchain(true);
-        try {
-            const state = usePassportStore.getState();
-            const { txHash } = await recordHashOnChain(state.hash, state.hash);
-            setBlockchainTxHash(txHash);
-            setBlockchainFailed(false);
-            setTimeout(() => router.push('/create-passport/review'), 600);
-        } catch (err: any) {
-            console.log('Blockchain retry failed:', err.message);
-        } finally {
-            setRetryingBlockchain(false);
-        }
-    };
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -149,61 +106,35 @@ export default function ProcessingScreen() {
                     Our AI is reading your photos and building your passport. This takes about 10–20 seconds.
                 </Text>
 
-                {completed === STEPS.length && blockchainFailed ? (
-                    <View style={styles.errorCard}>
-                        <Text style={styles.errorIcon}>✗</Text>
-                        <Text style={styles.errorTitle}>Blockchain anchoring failed</Text>
-                        <Text style={styles.errorMessage}>
-                            Your passport cannot be created without on-chain verification. Please try again.
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.retryBtn}
-                            onPress={handleRetryBlockchain}
-                            disabled={retryingBlockchain}
-                        >
-                            {retryingBlockchain ? (
-                                <ActivityIndicator color={Colors.white} size="small" />
-                            ) : (
-                                <Text style={styles.retryBtnText}>Retry</Text>
-                            )}
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.goBackBtn} onPress={() => router.back()}>
-                            <Text style={styles.goBackBtnText}>Go Back</Text>
-                        </TouchableOpacity>
+                {/* Spinner */}
+                <View style={styles.spinnerWrap}>
+                    <Animated.View style={[styles.spinnerRing, { transform: [{ rotate: spin }] }]} />
+                    <View style={styles.spinnerCore}>
+                        <Text style={styles.spinnerEmoji}>✨</Text>
                     </View>
-                ) : (
-                    <>
-                        {/* Spinner */}
-                        <View style={styles.spinnerWrap}>
-                            <Animated.View style={[styles.spinnerRing, { transform: [{ rotate: spin }] }]} />
-                            <View style={styles.spinnerCore}>
-                                <Text style={styles.spinnerEmoji}>✨</Text>
-                            </View>
-                        </View>
+                </View>
 
-                        {/* Checklist */}
-                        <View style={styles.checklist}>
-                            {STEPS.map((step, i) => {
-                                const done = i < completed;
-                                const active = i === completed;
-                                return (
-                                    <View key={i} style={styles.row}>
-                                        <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
-                                            {done && <Text style={styles.check}>✓</Text>}
-                                        </View>
-                                        <Text style={[
-                                            styles.stepText,
-                                            done && styles.stepDone,
-                                            active && styles.stepActive,
-                                        ]}>
-                                            {step.label}
-                                        </Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    </>
-                )}
+                {/* Checklist */}
+                <View style={styles.checklist}>
+                    {STEPS.map((step, i) => {
+                        const done = i < completed;
+                        const active = i === completed;
+                        return (
+                            <View key={i} style={styles.row}>
+                                <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
+                                    {done && <Text style={styles.check}>✓</Text>}
+                                </View>
+                                <Text style={[
+                                    styles.stepText,
+                                    done && styles.stepDone,
+                                    active && styles.stepActive,
+                                ]}>
+                                    {step.label}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
 
             </View>
 
@@ -279,30 +210,4 @@ const styles = StyleSheet.create({
     stepText: { fontSize: Typography.base, color: Colors.gray400 },
     stepDone: { color: Colors.black, fontWeight: '500' },
     stepActive: { color: Colors.primary, fontWeight: '500' },
-    errorCard: {
-        backgroundColor: '#FFF5F5',
-        borderRadius: Radius.lg,
-        borderWidth: 1,
-        borderColor: '#FECACA',
-        padding: Spacing.xl,
-        alignItems: 'center',
-        gap: Spacing.sm,
-    },
-    errorIcon: { fontSize: 40, color: '#EF4444' },
-    errorTitle: { fontSize: Typography.lg, fontWeight: '700', color: '#991B1B' },
-    errorMessage: { fontSize: Typography.sm, color: '#B91C1C', textAlign: 'center', lineHeight: 20 },
-    retryBtn: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.md,
-        borderRadius: Radius.md,
-        marginTop: Spacing.sm,
-        minWidth: 160,
-        alignItems: 'center',
-    },
-    retryBtnText: { color: Colors.white, fontSize: Typography.base, fontWeight: '700' },
-    goBackBtn: {
-        paddingVertical: Spacing.sm,
-    },
-    goBackBtnText: { fontSize: Typography.sm, color: Colors.gray400 },
 });

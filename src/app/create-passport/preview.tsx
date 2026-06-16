@@ -17,16 +17,17 @@ import { usePassportStore } from '../../store/usePassportStore';
 import { useUserStore } from '@/store/useUserStore';
 import { askAIOnNewScore } from '@/lib/ai/huggingface';
 import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
+import { recordHashOnChain } from '@/lib/blockchain/polygon';
 
 export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
     const hash = usePassportStore((s) => s.hash);
-    const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
-    const blockchainFailed = usePassportStore((s) => s.blockchainFailed);
+    const setBlockchainTxHash = usePassportStore((s) => s.setBlockchainTxHash);
     const originalResponse = usePassportStore((s) => s.response);
     const category = usePassportStore((s) => s.category);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
+    const [isAnchoring, setIsAnchoring] = useState(false);
     console.log("Edited response: ", response);
     useEffect(() => {
         async function computeNewScore() {
@@ -117,21 +118,34 @@ export default function PreviewScreen() {
                 {
                     text: 'Publish',
                     onPress: async () => {
-                        const user = await getCurrentUser();
-                        if (!user) return;
-                        const created = await createPassport({
-                            user_id: user.id,
-                            product_name: PASSPORT.name,
-                            material: PASSPORT.material,
-                            origin: PASSPORT.origin,
-                            production_method: PASSPORT.production_method,
-                            sustainability_score: Number(PASSPORT.score) || 0,
-                            description: PASSPORT.description,
-                            content_hash: hash,
-                            category: category ?? '',
-                            blockchain_tx_hash: blockchainTxHash,
-                        });
-                        router.replace(`/passport/${created.passport_id}`);
+                        setIsAnchoring(true);
+                        try {
+                            const user = await getCurrentUser();
+                            if (!user) return;
+
+                            const { txHash } = await recordHashOnChain(hash, hash);
+                            setBlockchainTxHash(txHash);
+                            console.log('Blockchain tx:', txHash);
+
+                            const created = await createPassport({
+                                user_id: user.id,
+                                product_name: PASSPORT.name,
+                                material: PASSPORT.material,
+                                origin: PASSPORT.origin,
+                                production_method: PASSPORT.production_method,
+                                sustainability_score: Number(PASSPORT.score) || 0,
+                                description: PASSPORT.description,
+                                content_hash: hash,
+                                category: category ?? '',
+                                blockchain_tx_hash: txHash,
+                            });
+                            router.replace(`/passport/${created.passport_id}`);
+                        } catch (err: any) {
+                            console.log('Publish failed:', err.message);
+                            Alert.alert('Blockchain anchoring failed', err.message || 'Please try again.');
+                        } finally {
+                            setIsAnchoring(false);
+                        }
                     },
                 },
             ]
@@ -216,14 +230,6 @@ export default function PreviewScreen() {
 
             </ScrollView>
 
-            {blockchainFailed && (
-                <View style={styles.errorBanner}>
-                    <Text style={styles.errorBannerText}>
-                        Blockchain anchoring failed — publishing is disabled. Go back and try again.
-                    </Text>
-                </View>
-            )}
-
             {/* Footer buttons */}
             <View style={styles.footer}>
                 <TouchableOpacity
@@ -235,12 +241,17 @@ export default function PreviewScreen() {
                 <TouchableOpacity
                     style={[
                         styles.publishBtn,
-                        isCalculatingScore && styles.publishBtnDisabled  // ← Add this
+                        (isCalculatingScore || isAnchoring) && styles.publishBtnDisabled
                     ]}
                     onPress={handlePublish}
-                    disabled={isCalculatingScore || blockchainFailed}
+                    disabled={isCalculatingScore || isAnchoring}
                 >
-                    {isCalculatingScore ? (
+                    {isAnchoring ? (
+                        <>
+                            <ActivityIndicator size="small" color="#fff" />
+                            <Text style={styles.publishBtnText}>Anchoring on blockchain...</Text>
+                        </>
+                    ) : isCalculatingScore ? (
                         <>
                             <ActivityIndicator size="small" color="#fff" />
                             <Text style={styles.publishBtnText}>Calculating Score...</Text>
@@ -340,16 +351,4 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     publishBtnText: { color: Colors.white, fontSize: Typography.base, fontWeight: '700' },
-    errorBanner: {
-        backgroundColor: '#FFF5F5',
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: '#FECACA',
-    },
-    errorBannerText: {
-        fontSize: Typography.sm,
-        color: '#B91C1C',
-        textAlign: 'center',
-    },
 });
