@@ -1,31 +1,34 @@
-import { getProvider, getSigner, getContract } from "./config";
-
-function toBytes32(hex: string): string {
-  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-  if (clean.length !== 64) {
-    throw new Error(`Hash must be 32 bytes (64 hex chars). Got ${clean.length} chars.`);
-  }
-  return "0x" + clean;
-}
+import {
+  publicClient,
+  walletClient,
+  contractConfig,
+  polygonAmoy,
+} from "./config";
 
 export async function recordHashOnChain(
   passportId: string,
   contentHash: string
 ): Promise<{ txHash: string; blockNumber: number }> {
-  const signer = getSigner();
-  const contract = getContract(signer);
-  const bytes32Hash = toBytes32(contentHash);
+  if (!walletClient) {
+    throw new Error("Wallet not configured: EXPO_PUBLIC_DEPLOYER_PRIVATE_KEY is not set");
+  }
 
-  const tx = await contract.anchorHash(passportId, bytes32Hash);
-  const receipt = await tx.wait(1);
+  const hash = await walletClient.writeContract({
+    ...contractConfig,
+    functionName: "anchorHash",
+    args: [passportId, contentHash as `0x${string}`],
+    chain: polygonAmoy,
+  });
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
   if (!receipt) {
     throw new Error("Transaction not confirmed");
   }
 
   return {
-    txHash: receipt.hash,
-    blockNumber: receipt.blockNumber,
+    txHash: receipt.transactionHash,
+    blockNumber: Number(receipt.blockNumber),
   };
 }
 
@@ -37,17 +40,16 @@ export async function verifyHashOnChain(
   timestamp: number;
   recorder: string;
 }> {
-  const provider = getProvider();
-  const contract = getContract(provider);
-  const bytes32Hash = toBytes32(contentHash);
-
-  const [exists, passportId, timestamp, recorder] = await contract.verifyHash(bytes32Hash);
+  const [exists, passportId, timestamp, recorder] = await publicClient.readContract({
+    ...contractConfig,
+    functionName: "verifyHash",
+    args: [contentHash as `0x${string}`],
+  });
 
   return {
-    exists,
-    passportId,
+    exists: exists as boolean,
+    passportId: passportId as string,
     timestamp: Number(timestamp),
-    recorder,
+    recorder: recorder as string,
   };
 }
-
