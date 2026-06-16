@@ -123,9 +123,20 @@ export default function PreviewScreen() {
                             const user = await getCurrentUser();
                             if (!user) return;
 
-                            const { txHash } = await recordHashOnChain(hash, hash);
-                            setBlockchainTxHash(txHash);
-                            console.log('Blockchain tx:', txHash);
+                            let txHash: string;
+                            try {
+                                const result = await recordHashOnChain(hash, hash);
+                                txHash = result.txHash;
+                                setBlockchainTxHash(txHash);
+                                console.log('Blockchain tx:', txHash);
+                            } catch (anchorErr: any) {
+                                if (anchorErr.message?.includes('Hash already exists')) {
+                                    console.log('Hash already anchored, proceeding');
+                                    txHash = 'already-anchored';
+                                } else {
+                                    throw anchorErr;
+                                }
+                            }
 
                             const created = await createPassport({
                                 user_id: user.id,

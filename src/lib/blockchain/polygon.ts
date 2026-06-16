@@ -5,6 +5,10 @@ import {
   polygonAmoy,
 } from "./config";
 
+function ensureHexPrefix(hex: string): `0x${string}` {
+  return (hex.startsWith("0x") ? hex : `0x${hex}`) as `0x${string}`;
+}
+
 export async function recordHashOnChain(
   passportId: string,
   contentHash: string
@@ -16,7 +20,7 @@ export async function recordHashOnChain(
   const hash = await walletClient.writeContract({
     ...contractConfig,
     functionName: "anchorHash",
-    args: [passportId, contentHash as `0x${string}`],
+    args: [passportId, ensureHexPrefix(contentHash)],
     chain: polygonAmoy,
   });
 
@@ -43,7 +47,7 @@ export async function verifyHashOnChain(
   const [exists, passportId, timestamp, recorder] = await publicClient.readContract({
     ...contractConfig,
     functionName: "verifyHash",
-    args: [contentHash as `0x${string}`],
+    args: [ensureHexPrefix(contentHash)],
   });
 
   return {
