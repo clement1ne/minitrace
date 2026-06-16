@@ -22,6 +22,7 @@ export default function ProcessingScreen() {
     const clearUris = usePassportStore((s) => s.clearUris);
     const setHash = usePassportStore((s) => s.setHash);
     const setBlockchainTxHash = usePassportStore((s) => s.setBlockchainTxHash);
+    const setBlockchainFailed = usePassportStore((s) => s.setBlockchainFailed);
     const [mismatchVisible, setMismatchVisible] = useState(false);
     const [mismatchMessage, setMismatchMessage] = useState('');
     const category = usePassportStore((s) => s.category);
@@ -75,6 +76,7 @@ export default function ProcessingScreen() {
                     console.log('Blockchain tx:', txHash);
                 } catch (err: any) {
                     console.log('Blockchain recording skipped:', err.message);
+                    setBlockchainFailed(true);
                 }
             }
         },

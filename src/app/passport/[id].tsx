@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Linking,
   SafeAreaView,
   ScrollView,
@@ -12,69 +13,72 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Spacing, Typography } from '../constants/theme';
-import { usePassportStore } from '../../store/usePassportStore';
 import { getPolygonScanUrl } from '../../lib/blockchain/config';
-
-// Mock passport data — replace with API/store lookup in production
-const PASSPORTS: Record<string, {
-  id: string;
-  name: string;
-  maker: string;
-  shopName: string;
-  makerBio: string;
-  material: string;
-  origin: string;
-  production_method: string;
-  firedAt: string;
-  score: number;
-  scans: number;
-  createdAt: string;
-  description: string;
-  color: string;
-}> = {
-  '0042': {
-    id: '0042',
-    name: 'Handmade Ceramic Mug',
-    maker: 'Maria Santos',
-    shopName: "Maria's Ceramics",
-    makerBio: 'Maria has been hand-throwing ceramics for 8 years from her home studio in Davao, Philippines.',
-    material: 'Stoneware clay, natural ash glaze',
-    origin: 'Davao, Philippines',
-    production_method: 'Wheel-thrown',
-    firedAt: '1280°C',
-    score: 7.8,
-    scans: 14,
-    createdAt: 'April 30, 2026',
-    description: 'Wheel-thrown stoneware mug with natural ash glaze, kiln-fired at 1280°C. Each piece is unique with slight variations in glaze pooling — no two mugs are identical.',
-    color: '#9FE1CB',
-  },
-};
-
-const FALLBACK = PASSPORTS['0042'];
-
-const INFO_ROWS = (p: typeof FALLBACK, h: string) => [
-  { key: 'Material', value: p.material },
-  { key: 'Made in', value: p.origin },
-  { key: 'Method', value: p.production_method },
-  { key: 'Fired at', value: p.firedAt },
-  { key: 'Passport ID', value: h ? `${h.slice(0, 16)}...` : `#MT-${p.id}` },
-  { key: 'Created', value: p.createdAt },
-  { key: 'QR scans', value: String(p.scans) },
-];
+import { getPassportById } from '../../lib/supabase/functions';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function PassportDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const passport = PASSPORTS[id ?? ''] ?? FALLBACK;
-  const hash = usePassportStore((s) => s.hash);
-  const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
   const insets = useSafeAreaInsets();
+  const currentName = useUserStore((s) => s.currentName);
+  const [passport, setPassport] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      if (!id) return;
+      try {
+        const data = await getPassportById(id);
+        setPassport(data);
+      } catch (err: any) {
+        console.log('Failed to load passport:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
+
+  const sd = passport?.sustainability_data;
+  const contentHash = passport?.passport_anchors?.[0]?.content_hash;
+  const blockchainTxHash = passport?.blockchain_tx_hash;
+
+  const infoRows = [
+    { key: 'Material', value: sd?.material ?? '-' },
+    { key: 'Made in', value: sd?.origin ?? '-' },
+    { key: 'Method', value: passport?.production_method ?? '-' },
+    { key: 'Passport ID', value: id ? `${id.slice(0, 16)}...` : '-' },
+    { key: 'Created', value: passport?.created_at ? new Date(passport.created_at).toLocaleDateString() : '-' },
+  ];
 
   const handleShare = async () => {
     await Share.share({
-      message: `Check out this verified product passport for ${passport.name} by ${passport.maker}: https://minitrace.app/passport/${passport.id}`,
+      message: `Check out this verified product passport for ${passport?.product_name}: https://minitrace.app/passport/${id}`,
     });
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!passport) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.notFoundText}>Passport not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const score = sd?.sustainability_score ?? 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -91,40 +95,40 @@ export default function PassportDetailScreen() {
         </View>
 
         {/* Product image */}
-        <View style={[styles.productImage, { backgroundColor: passport.color }]}>
+        <View style={[styles.productImage, { backgroundColor: Colors.primaryLight }]}>
           <Text style={styles.productImageLabel}>Product photo</Text>
         </View>
 
         {/* Name + verified */}
-        <Text style={styles.name}>{passport.name}</Text>
+        <Text style={styles.name}>{passport.product_name}</Text>
         <View style={styles.makerRow}>
-          <Text style={styles.makerText}>by {passport.maker}</Text>
+          <Text style={styles.makerText}>by {currentName ?? 'Maker'}</Text>
           <View style={styles.verifiedBadge}>
             <Text style={styles.verifiedText}>✓ Verified</Text>
           </View>
         </View>
 
         {/* Description */}
-        <Text style={styles.description}>{passport.description}</Text>
+        <Text style={styles.description}>{passport.description ?? '-'}</Text>
 
         <View style={styles.divider} />
 
         {/* Info rows */}
         <Text style={styles.sectionTitle}>Product details</Text>
-        {INFO_ROWS(passport, hash).map((row, i) => (
+        {infoRows.map((row, i) => (
           <View
             key={row.key}
-            style={[styles.infoRow, i < INFO_ROWS(passport, hash).length - 1 && styles.infoRowBorder]}
+            style={[styles.infoRow, i < infoRows.length - 1 && styles.infoRowBorder]}
           >
             <Text style={styles.infoKey}>{row.key}</Text>
             <Text style={styles.infoVal}>{row.value}</Text>
           </View>
         ))}
 
-        {hash ? (
+        {contentHash ? (
           <View style={[styles.infoRow, styles.infoRowBorder]}>
             <Text style={styles.infoKey}>Content fingerprint</Text>
-            <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">{hash.slice(0, 16)}...</Text>
+            <Text style={styles.hashVal} numberOfLines={1} ellipsizeMode="tail">{contentHash.slice(0, 16)}...</Text>
           </View>
         ) : null}
 
@@ -149,10 +153,10 @@ export default function PassportDetailScreen() {
         <Text style={styles.sectionTitle}>Sustainability score</Text>
         <View style={styles.scoreRow}>
           <View style={styles.scoreBadge}>
-            <Text style={styles.scoreBadgeText}>{passport.score}/10</Text>
+            <Text style={styles.scoreBadgeText}>{score}/10</Text>
           </View>
           <View style={styles.scoreBarWrap}>
-            <View style={[styles.scoreBarFill, { width: `${(passport.score / 10) * 100}%` }]} />
+            <View style={[styles.scoreBarFill, { width: `${(score / 10) * 100}%` }]} />
           </View>
         </View>
 
@@ -162,14 +166,12 @@ export default function PassportDetailScreen() {
         <Text style={styles.sectionTitle}>About the maker</Text>
         <View style={styles.makerCard}>
           <View style={styles.makerAvatar}>
-            <Text style={styles.makerAvatarText}>MS</Text>
+            <Text style={styles.makerAvatarText}>{currentName?.slice(0, 2).toUpperCase() ?? 'MK'}</Text>
           </View>
           <View style={styles.makerInfo}>
-            <Text style={styles.makerName}>{passport.maker}</Text>
-            <Text style={styles.makerShop}>{passport.shopName}</Text>
+            <Text style={styles.makerName}>{currentName ?? 'Maker'}</Text>
           </View>
         </View>
-        <Text style={styles.makerBio}>{passport.makerBio}</Text>
 
       </ScrollView>
 
@@ -177,7 +179,7 @@ export default function PassportDetailScreen() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.qrBtn}
-          onPress={() => router.push(`/passport/qr/${passport.id}`)}
+          onPress={() => router.push(`/passport/qr/${id}`)}
         >
           <Text style={styles.qrBtnText}>View QR code</Text>
         </TouchableOpacity>
@@ -191,6 +193,8 @@ export default function PassportDetailScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.white },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notFoundText: { fontSize: Typography.base, color: Colors.gray400 },
   container: { paddingHorizontal: Spacing.xl, paddingBottom: 110 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xl },
   navBack: { fontSize: Typography.base, color: Colors.primary },
@@ -237,8 +241,6 @@ const styles = StyleSheet.create({
   makerAvatarText: { fontSize: Typography.sm, fontWeight: '700', color: Colors.primaryDark },
   makerInfo: { flex: 1 },
   makerName: { fontSize: Typography.base, fontWeight: '600', color: Colors.black },
-  makerShop: { fontSize: Typography.sm, color: Colors.gray400 },
-  makerBio: { fontSize: Typography.base, color: Colors.gray600, lineHeight: 22 },
   footer: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,

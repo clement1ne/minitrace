@@ -96,7 +96,7 @@ export async function getCurrentUserName() {
             .single();
 
         if (error) {
-            console.log("Current user profile: ", profile);
+            console.log("Error fetching profile: ", error);
             return user.email?.split('@')[0] || "User";
         }
         console.log("userid: ", user.id)
@@ -121,4 +121,15 @@ export async function getLatestPassports(user_id: string) {
     if (error) throw error;
 
     return passports;
+}
+
+export async function getPassportById(passportId: string) {
+    const { data, error } = await supabase
+        .from('passports')
+        .select('*, passport_anchors(content_hash, tx_hash)')
+        .eq('passport_id', passportId)
+        .single();
+
+    if (error) throw error;
+    return data;
 }

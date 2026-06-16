@@ -22,6 +22,7 @@ export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
     const hash = usePassportStore((s) => s.hash);
     const blockchainTxHash = usePassportStore((s) => s.blockchainTxHash);
+    const blockchainFailed = usePassportStore((s) => s.blockchainFailed);
     const originalResponse = usePassportStore((s) => s.response);
     const category = usePassportStore((s) => s.category);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
@@ -118,7 +119,7 @@ export default function PreviewScreen() {
                     onPress: async () => {
                         const user = await getCurrentUser();
                         if (!user) return;
-                        await createPassport({
+                        const created = await createPassport({
                             user_id: user.id,
                             product_name: PASSPORT.name,
                             material: PASSPORT.material,
@@ -128,9 +129,9 @@ export default function PreviewScreen() {
                             description: PASSPORT.description,
                             content_hash: hash,
                             category: category ?? '',
-                            blockchain_tx_hash: blockchainTxHash,
+                            blockchain_tx_hash: blockchainFailed ? null : blockchainTxHash,
                         });
-                        router.replace(`/passport/${PASSPORT.id}`);
+                        router.replace(`/passport/${created.passport_id}`);
                     },
                 },
             ]
@@ -214,6 +215,14 @@ export default function PreviewScreen() {
                 </View>
 
             </ScrollView>
+
+            {blockchainFailed && (
+                <View style={styles.warningBanner}>
+                    <Text style={styles.warningText}>
+                        Blockchain anchoring failed — passport will be saved without on-chain verification.
+                    </Text>
+                </View>
+            )}
 
             {/* Footer buttons */}
             <View style={styles.footer}>
@@ -331,4 +340,16 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     publishBtnText: { color: Colors.white, fontSize: Typography.base, fontWeight: '700' },
+    warningBanner: {
+        backgroundColor: '#FFF3CD',
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: '#FFE69C',
+    },
+    warningText: {
+        fontSize: Typography.sm,
+        color: '#856404',
+        textAlign: 'center',
+    },
 });

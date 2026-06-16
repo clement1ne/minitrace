@@ -14,6 +14,8 @@ type PassportStore = {
     setHash: (hash: string) => void;
     blockchainTxHash: string | null;
     setBlockchainTxHash: (blockchainTxHash: string | null) => void;
+    blockchainFailed: boolean;
+    setBlockchainFailed: (failed: boolean) => void;
 };
 
 export const usePassportStore = create<PassportStore>((set) => ({
@@ -30,4 +32,6 @@ export const usePassportStore = create<PassportStore>((set) => ({
     setHash: (hash) => set({ hash }),
     blockchainTxHash: null,
     setBlockchainTxHash: (blockchainTxHash) => set({ blockchainTxHash }),
+    blockchainFailed: false,
+    setBlockchainFailed: (blockchainFailed) => set({ blockchainFailed }),
 }));
