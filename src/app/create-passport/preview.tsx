@@ -129,7 +129,7 @@ export default function PreviewScreen() {
                             description: PASSPORT.description,
                             content_hash: hash,
                             category: category ?? '',
-                            blockchain_tx_hash: blockchainFailed ? null : blockchainTxHash,
+                            blockchain_tx_hash: blockchainTxHash,
                         });
                         router.replace(`/passport/${created.passport_id}`);
                     },
@@ -217,9 +217,9 @@ export default function PreviewScreen() {
             </ScrollView>
 
             {blockchainFailed && (
-                <View style={styles.warningBanner}>
-                    <Text style={styles.warningText}>
-                        Blockchain anchoring failed — passport will be saved without on-chain verification.
+                <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>
+                        Blockchain anchoring failed — publishing is disabled. Go back and try again.
                     </Text>
                 </View>
             )}
@@ -238,7 +238,7 @@ export default function PreviewScreen() {
                         isCalculatingScore && styles.publishBtnDisabled  // ← Add this
                     ]}
                     onPress={handlePublish}
-                    disabled={isCalculatingScore}   // ← This is the key
+                    disabled={isCalculatingScore || blockchainFailed}
                 >
                     {isCalculatingScore ? (
                         <>
@@ -340,16 +340,16 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     publishBtnText: { color: Colors.white, fontSize: Typography.base, fontWeight: '700' },
-    warningBanner: {
-        backgroundColor: '#FFF3CD',
+    errorBanner: {
+        backgroundColor: '#FFF5F5',
         paddingHorizontal: Spacing.xl,
         paddingVertical: Spacing.md,
         borderTopWidth: 1,
-        borderTopColor: '#FFE69C',
+        borderTopColor: '#FECACA',
     },
-    warningText: {
+    errorBannerText: {
         fontSize: Typography.sm,
-        color: '#856404',
+        color: '#B91C1C',
         textAlign: 'center',
     },
 });
