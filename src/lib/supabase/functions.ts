@@ -14,36 +14,63 @@ export async function getPassports(user_id: string) {
 }
 
 export async function createPassport(data: {
-  user_id: string;
-  product_name: string;
-  material: string;
-  origin: string;
-  production_method: string;
-  sustainability_score: number;
-  description: string;
-  content_hash: string;
-  category: string;
-  blockchain_tx_hash?: string | null;
+    user_id: string;
+    product_name: string;
+    material: string;
+    origin: string;
+    production_method: string;
+    sustainability_score: number;
+    description: string;
+    content_hash: string;
+    category: string;
+    blockchain_tx_hash?: string | null;
 }) {
-  const { error } = await supabase
-    .from('passports')
-    .insert({
-      user_id: data.user_id,
-      product_name: data.product_name,
-      material: data.material,
-      origin: data.origin,
-      production_method: data.production_method,
-      sustainability_score: data.sustainability_score,
-      description: data.description,
-      content_hash: data.content_hash,
-      category: data.category,
-      blockchain_tx_hash: data.blockchain_tx_hash ?? null,
-      blockchain_network: data.blockchain_tx_hash ? 'polygon-amoy' : null,
-      status: 'Verified',
-      created_at: new Date().toISOString(),
-    })
+    // 1. Create passport (without content_hash)
+    const { data: passport, error } = await supabase
+        .from('passports')
+        .insert({
+            user_id: data.user_id,
+            product_name: data.product_name,
+            category: data.category,
+            production_method: data.production_method,
+            description: data.description,
+            sustainability_data: {
+                material: data.material,
+                origin: data.origin,
+                sustainability_score: data.sustainability_score,
+            },
+            status: 'Verified',
+            blockchain_tx_hash: data.blockchain_tx_hash ?? null,
+            blockchain_network: data.blockchain_tx_hash ? 'polygon-amoy' : null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-  if (error) throw error;
+    if (error) throw error;
+
+    // 2. Create anchor with content_hash
+    const { error: anchorError } = await supabase
+        .from('passport_anchors')
+        .insert({
+            passport_id: passport.passport_id,
+            content_hash: data.content_hash,
+            tx_hash: data.blockchain_tx_hash,
+            anchored_at: new Date().toISOString(),
+            snapshot: {
+                product_name: data.product_name,
+                material: data.material,
+                origin: data.origin,
+                production_method: data.production_method,
+                sustainability_score: data.sustainability_score,
+                description: data.description,
+            },
+        });
+
+    if (anchorError) throw anchorError;
+
+    return passport;
 }
 
 export async function getCurrentUser() {
