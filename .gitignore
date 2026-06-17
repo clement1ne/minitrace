@@ -49,3 +49,5 @@ AGENTS.md
 .vscode/mcp.json
 
 opencode.json
+.vercel
+.env*

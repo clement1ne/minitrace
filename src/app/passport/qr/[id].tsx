@@ -8,24 +8,30 @@ import {
     Share,
     ScrollView,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Svg, { Rect, Path } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
-import QRCode from 'react-native-svg';
 import { usePassportStore } from '@/store/usePassportStore';
+import QRCode from 'react-native-qrcode-svg';
 
 export default function QRCodeScreen() {
     const router = useRouter();
+    const qrRef = useRef<any>(null);
     const passportId = usePassportStore((s) => s?.passportId);
-    const url = `https://minitrace.app/passport/${passportId}`;
+    const editedResponse = usePassportStore((s) => s?.editedResponse);
+    const passportName = editedResponse?.name;
+    //const url = `https://minitrace-52pd.vercel.app/passport/${passportId}`;
 
+    const url = `https://minitrace-52pd.vercel.app/passport/${passportId}`;
     const handleShare = async () => {
         await Share.share({ message: `View this verified product passport: ${url}` });
     };
 
     const handleDownload = () => {
-        Alert.alert('Download QR', 'QR image saved to your photo library.');
+        qrRef.current?.toDataURL((data: string) => {
+            Alert.alert('Downloaded', 'QR code saved to your photo library.');
+        });
     };
 
     return (
@@ -47,10 +53,20 @@ export default function QRCodeScreen() {
                 {/* QR Card */}
                 <View style={styles.qrCard}>
 
-                    <Text style={styles.passportLabel}>Ceramic Mug — #MT-{passportId}</Text>
+                    <Text style={styles.passportLabel}>{passportName} — #MT-{passportId}</Text>
 
                     <View style={styles.qrWrap}>
-                        <QRGraphic id={passportId} />
+                        {passportId ? (
+                            <QRCode
+                                getRef={(ref) => (qrRef.current = ref)}
+                                value={url}
+                                size={200}
+                                color={Colors.primary}
+                                backgroundColor="white"
+                            />
+                        ) : (
+                            <ActivityIndicator color={Colors.primary} />
+                        )}
                     </View>
 
                     <Text style={styles.qrUrl}>{url}</Text>

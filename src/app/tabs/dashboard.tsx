@@ -32,7 +32,7 @@ export default function DashboardScreen() {
             if (!currentUser) return;
             const data = await getLatestPassports(currentUser.id);
             const mapped = data?.map((p) => ({
-                id: String(p.id).padStart(4, '0'),
+                id: String(p.passport_id).padStart(4, '0'),
                 name: p.product_name,
                 date: new Date(p.created_at).toLocaleDateString(),
                 scans: p.scans ?? 0,
@@ -100,7 +100,11 @@ export default function DashboardScreen() {
                         <TouchableOpacity
                             key={p.id}
                             style={styles.passportRow}
-                            onPress={() => router.push(`/passport/${p.id}`)}
+
+                            onPress={() => {
+                                console.log(p);
+                                router.push(`/passport/${p.id}`)
+                            }}
                         >
                             <View style={[styles.thumb, { backgroundColor: p.color }]} />
                             <View style={styles.passportInfo}>
