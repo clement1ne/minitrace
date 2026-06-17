@@ -25,37 +25,13 @@ export default function PreviewScreen() {
     const setBlockchainTxHash = usePassportStore((s) => s.setBlockchainTxHash);
     const originalResponse = usePassportStore((s) => s.response);
     const category = usePassportStore((s) => s.category);
+    const setPassportId = usePassportStore((s) => s.setPassportId);
     const [SCORE, setScore] = useState(response?.sustainability_score ?? '-');
     const [isCalculatingScore, setIsCalculatingScore] = useState(false);
     const [isAnchoring, setIsAnchoring] = useState(false);
     console.log("Edited response: ", response);
     useEffect(() => {
         async function computeNewScore() {
-            // ✅ log both values side by side
-            console.log("=== SCORE RECOMPUTE CHECK ===");
-            console.log("response:        ", JSON.stringify(response, null, 2));
-            console.log("originalResponse:", JSON.stringify(originalResponse, null, 2));
-
-            // ✅ check field by field to find exactly what's different
-            /*if (response && originalResponse) {
-                Object.keys(response).forEach((key) => {
-                    const r = (response as any)[key];
-                    const o = (originalResponse as any)[key];
-                    if (JSON.stringify(r) !== JSON.stringify(o)) {
-                        console.log(`❌ DIFFERENCE in "${key}":`, { response: r, original: o });
-                    } else {
-                        console.log(`✅ SAME "${key}":`, r);
-                    }
-                });
-            }
-
-            const isDifferent = JSON.stringify(response) !== JSON.stringify(originalResponse);
-            console.log("isDifferent:", isDifferent);
-
-            if (!isDifferent) {
-                console.log("⏭️ Skipping score recompute — no changes detected"); return;
-            }*/
-
             const editableFields = ['name', 'material', 'origin', 'production_method', 'description'];
 
             const isDifferent = editableFields.some(
@@ -150,6 +126,13 @@ export default function PreviewScreen() {
                                 category: category ?? '',
                                 blockchain_tx_hash: txHash,
                             });
+
+                            if (created?.passport_id) {
+                                setPassportId(created.passport_id);
+                                router.replace(`/passport/${created?.passport_id}`);
+                            } else {
+                                console.error("No ID returned from the database");
+                            }
                             router.replace(`/passport/${created.passport_id}`);
                         } catch (err: any) {
                             console.log('Publish failed:', err.message);

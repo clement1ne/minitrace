@@ -23,6 +23,7 @@ export default function ProcessingScreen() {
     const [mismatchVisible, setMismatchVisible] = useState(false);
     const [mismatchMessage, setMismatchMessage] = useState('');
     const category = usePassportStore((s) => s.category);
+    const context: { hash?: string } = {};
     let success = true;
 
     console.log("type of: ", typeof uris);
@@ -52,6 +53,7 @@ export default function ProcessingScreen() {
                     Crypto.CryptoDigestAlgorithm.SHA256,
                     combined
                 );
+                context.hash = contentHash;
                 setHash(contentHash);
                 console.log("Content hash", contentHash);
             }
