@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+    Image,
     ActivityIndicator,
     Linking,
     SafeAreaView,
@@ -17,6 +18,7 @@ import { getPolygonScanUrl } from '../../lib/blockchain/config';
 import { getPassportById } from '../../lib/supabase/functions';
 import { useUserStore } from '@/store/useUserStore';
 import { usePassportStore } from '@/store/usePassportStore';
+import { supabase } from '@/utils/supabase';
 
 export default function PassportDetailScreen() {
     const router = useRouter();
@@ -25,14 +27,26 @@ export default function PassportDetailScreen() {
     const currentName = useUserStore((s) => s.currentName);
     const [passport, setPassport] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [photos, setPhotos] = useState<string[]>([]);
     const setPassportId = usePassportStore((s) => s.setPassportId);
 
+    // ✅ 1. merge both useEffects into one
     useEffect(() => {
         async function load() {
             if (!id) return;
             try {
                 const data = await getPassportById(id);
                 setPassport(data);
+
+                const { data: photoRows, error } = await supabase
+                    .from('photos')
+                    .select('image_url, position')
+                    .eq('passport_id', id)
+                    .order('position', { ascending: true });
+
+                if (!error && photoRows) {
+                    setPhotos(photoRows.map((p: any) => p.image_url));
+                }
             } catch (err: any) {
                 console.log('Failed to load passport:', err.message);
             } finally {
@@ -97,9 +111,31 @@ export default function PassportDetailScreen() {
                 </View>
 
                 {/* Product image */}
-                <View style={[styles.productImage, { backgroundColor: Colors.primaryLight }]}>
-                    <Text style={styles.productImageLabel}>Product photo</Text>
-                </View>
+                {photos.length > 0 ? (
+                    <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.imageScroller}
+                        contentContainerStyle={styles.imageScrollerContent}
+                    >
+                        {photos.map((uri, i) => (
+                            <Image
+                                key={i}
+                                source={{ uri }}
+                                style={
+                                    styles.productImage
+                                }
+                                resizeMode="cover"
+                            />
+                        ))}
+                    </ScrollView>
+                ) : (
+                    // fallback if no photos
+                    <View style={[styles.productImage, { backgroundColor: Colors.primaryLight }]}>
+                        <Text style={{ color: Colors.primaryDark }}>No photo available</Text>
+                    </View>
+                )}
 
                 {/* Name + verified */}
                 <Text style={styles.name}>{passport.product_name}</Text>
@@ -206,12 +242,18 @@ const styles = StyleSheet.create({
     navBack: { fontSize: Typography.base, color: Colors.primary },
     navShare: { fontSize: Typography.base, color: Colors.primary, fontWeight: '600' },
     productImage: {
+        width: 340,                  // ✅ fixed width per image for horizontal paging
+        height: 220,
+        borderRadius: Radius.lg,
+    },
+    imageScroller: {
         width: '100%',
         height: 220,
         borderRadius: Radius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
         marginBottom: Spacing.lg,
+    },
+    imageScrollerContent: {
+        alignItems: 'center',        // ✅ alignment on contentContainerStyle
     },
     productImageLabel: { fontSize: Typography.sm, color: Colors.primaryDark },
     name: { fontSize: Typography.xl, fontWeight: '700', color: Colors.black, marginBottom: Spacing.sm },

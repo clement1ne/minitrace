@@ -18,6 +18,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { askAIOnNewScore } from '@/lib/ai/huggingface';
 import { createPassport, getCurrentUser } from '../../lib/supabase/functions';
 import { recordHashOnChain } from '@/lib/blockchain/polygon';
+import { uploadPassportPhotos } from '../../lib/supabase/functions';
 
 export default function PreviewScreen() {
     const response = usePassportStore((s) => s.editedResponse);
@@ -128,6 +129,7 @@ export default function PreviewScreen() {
                             });
 
                             if (created?.passport_id) {
+                                const photoUrls = await uploadPassportPhotos(uris, created?.passport_id);
                                 setPassportId(created.passport_id);
                                 router.replace(`/passport/${created?.passport_id}`);
                             } else {

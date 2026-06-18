@@ -35,7 +35,7 @@ export default function MyPassportsScreen() {
 
             // Map DB columns → your display format
             const mapped = data?.map((p) => ({
-                id: String(p.id).padStart(4, '0'),
+                id: String(p.passport_id).padStart(4, '0'),
                 name: p.product_name,
                 meta: p.status === 'Draft'
                     ? 'Draft · not published'

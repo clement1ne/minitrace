@@ -1,4 +1,5 @@
 import { supabase } from '../../utils/supabase'
+import * as FileSystem from 'expo-file-system/legacy';
 
 export async function getPassports(user_id: string) {
     const { data: passports, error } = await supabase
@@ -132,4 +133,79 @@ export async function getPassportById(passportId: string) {
 
     if (error) throw error;
     return data;
+}
+
+// Upload file using standard upload
+export async function uploadPassportPhotos(
+    imageURIs: string[],
+    passportId: string
+): Promise<string[]> {
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < imageURIs.length; i++) {
+        const uri = imageURIs[i];
+
+        try {
+            // Step 1 — convert image URI to blob
+            const fileName = `${passportId}_photo_${i + 1}_${Date.now()}.jpg`;
+            const filePath = `${passportId}/${fileName}`;
+
+            // read as base64
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            // convert base64 to arraybuffer for upload
+            const byteCharacters = atob(base64);
+            const byteArray = new Uint8Array(byteCharacters.length);
+            for (let j = 0; j < byteCharacters.length; j++) {
+                byteArray[j] = byteCharacters.charCodeAt(j);
+            }
+
+            // Step 2 — upload to supabase "photos" bucket
+            const { data: storageData, error: storageError } = await supabase.storage
+                .from('photos')                // ✅ your bucket name
+                .upload(filePath, byteArray, {
+                    contentType: 'image/jpeg',
+                    upsert: false,
+                });
+
+            if (storageError) {
+                console.error(`❌ Upload failed for photo ${i + 1}:`, storageError.message);
+                continue;
+            }
+
+            console.log(`✅ Photo ${i + 1} uploaded:`, storageData.path);
+
+            // Step 3 — get public URL
+            const { data: urlData } = supabase.storage
+                .from('photos')
+                .getPublicUrl(filePath);
+
+            const publicUrl = urlData.publicUrl;
+            uploadedUrls.push(publicUrl);
+
+            // Step 4 — insert row into photos table
+            const { error: dbError } = await supabase
+                .from('photos')
+                .insert({
+                    passport_id: passportId,
+                    image_url: publicUrl,
+                    filename: fileName,
+                    position: i + 1,           // ✅ 1-indexed position
+                    created_at: new Date().toISOString(),
+                });
+
+            if (dbError) {
+                console.error(`❌ DB insert failed for photo ${i + 1}:`, dbError.message);
+            } else {
+                console.log(`✅ Photo ${i + 1} saved to DB`);
+            }
+
+        } catch (err: any) {
+            console.error(`❌ Error processing photo ${i + 1}:`, err.message);
+        }
+    }
+
+    return uploadedUrls; // returns all successfully uploaded URLs
 }
