@@ -37,13 +37,11 @@ export async function signup(userEmail: string, userPassword: string, fullName: 
 
         const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
-                id: data.user.id,
-                email: userEmail,
+            .update({
                 full_name: fullName,
-                created_at: new Date().toISOString(),
                 shop_name: shopName,
-            });
+            })
+            .eq('id', data.user.id);
 
         if (profileError) { throw profileError; }
 
